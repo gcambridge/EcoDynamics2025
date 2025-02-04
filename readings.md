@@ -4,3 +4,6 @@
 [Practical guide to Ecological Modeling - Soetaert and Herman](https://link-springer-com.ezproxy.lib.vt.edu/book/10.1007/978-1-4020-8624-3)  
 [Biogeochemistry: An Analysis of Global Change - Schlesinge and Bernhardt](https://www-sciencedirect-com.ezproxy.lib.vt.edu/book/9780123858740/biogeochemistry)
 
+### Keyboard Shortcuts:
+Run Selection: Ctrl + Enter
+Run all: Ctrl + Shift + Enter

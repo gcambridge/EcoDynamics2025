@@ -1,0 +1,493 @@
+---
+title: 'Introduction to R'
+output:
+  html_document: default
+---
+
+## Goals for lab
+
+-	Become acquainted with R
+-	Build a simple tree growth and death model
+
+## Step 1: Knitting a document
+
+Visit https://www.r-project.org to download R.  Find the version of R that is appropriate for your operating system.
+
+Visit https://posit.co/download/rstudio-desktop/ to download R Studio.  R Studio is an IDE (interactive development environment) for R.   It provides tools for easing code writing and helps contain the numerous windows R often opens.  
+
+Go to file and under "New File" select "R Markdown..."
+
+Select Document on the left menu, Title is "Lab 1 test", Author is your name, Select "HTML".
+
+Click OK to create a new Rmarkdown file.
+
+In the new file, click Knit -> Knit to HTML.  If you need to install any packages, please go ahead and install them.  Now create the HTML document from the Rmarkdown file.  Confirm that a HTML document was created.  This exercise test that Rmarkdown works on your computer.  You will not turn in this HTML file.
+
+Complete all the questions below and click -> Knit to HTML to create the document that you will turn in.
+
+## Step 2
+
+We are going to use R as a scientific programming language. You may have used R for data science, particularly with the tidyverse family of packages. Here, we use "base R" to do calculations on vectors and arrays for simulation.  We will not be using the commonly used "tidyverse R" because we will not be working with data.
+
+A variable is a symbol that is assigned a value.  In the code below, a, b, and c are variables. In R, run the following code:
+
+```{r}
+a <- 2
+b <- 3
+c <- a + b
+c 
+```
+
+**Question 1:** 
+
+What value do you get for the variable c?
+
+**Answer 1:**
+
+5 
+  
+**Question 2:** 
+
+Use the concept of a variable to calculate the area of a rectangle (a variable called `rect_area`) using variables called `side1` and `side2`.  Put the code you used below this question in the code "chunk" (i.e., the lines between the ``` symbols)
+
+**Answer 2:**
+
+```{r}
+side1 <- 2
+side2 <- 3
+rect_area <- side1 * side2
+rect_area
+
+```
+  
+## Step 3: Explore the concept of a function
+
+A function is code that receives inputs and returns outputs. It is defined by the name of the function, followed by a set of parentheses that contains the inputs to the function. We use functions to allow us to repeat calculations in code without having to retype all the code.  Instead of retyping many lines of code to repeat calculations, you can create a function and reuse it by typing just the name of the function and providing the inputs. 
+
+When naming functions, the name must be a verb so it is easy to understand what "action" the function performs.
+
+The following is an example of a function that calculates the area of a rectangle.  The function is named `calc_rect_area`
+
+```{r}
+calc_rect_area <- function(a, b){
+  area <- a * b
+  return(area)
+}
+```
+
+The `a` and `b` in the parenthesis after the function are the inputs. Anything in the brackets is performed when the function is called. The value in the parenthesis after the `return` is the value that is output by the function. Anything else in the function is not saved. The following is an example of a function call (be sure that you have run the function code above):
+
+```{r}
+side1 <- 5
+side2 <- 40
+area <- calc_rect_area(a = side1, b = side2)
+area
+```
+
+**Question 3:** 
+
+Using the code above as a template, create a function to calculate the area of a circle given a value for the radius. Put your code below in the code chunk.  Remember to have the name of the function be an action.
+
+**Answer 3**
+
+```{r}
+calc_circle_area <- function(r){
+  area  <- pi * r ^ 2
+  return(area)
+}
+
+```
+
+## Step 4: Explore the concept of a scalar, vector, array, and matrix
+
+A scalar is a single number that can be used to multiply by other scalars, vectors, or arrays.  Think of it as a number that re-scales another number.
+
+A vector, array, or matrix is a group of numbers or characters that can be referenced using the name of a single variable (variables are also called objects).  A vector is a 1-dimensional set of numbers (or characters) that are all the same type (i.e., has to be all numbers or characters).  The following is an example of a numerical vector:
+
+```{r}
+a <- c(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+a
+```
+
+where the c() is a function because is a word `c` followed directly by parentheses.  Run following the command to learn about the function.  The `?<insert function name>` command displays the help information for the function.
+
+```{r}
+?c
+```
+
+**Question 4:** 
+
+Describe the c() function. What does it do?
+
+**Answer 4:**
+
+c() is for concatenating single variables into a vector
+
+
+You can use an index to reference a 'cell' within the vector (1D) or array/matrix (multi-dimensional).  Putting an integer in brackets [number] allows you to access that cell of the vector.  In the example below, the variable index is set to 1 and is used to access the first element of `a[index].`  This is the same `a[1]` because `index` is set to 1.
+
+```{r}
+index <- 1
+a[index]
+a[1]
+```
+
+**Question 5:** 
+
+What is the value for the 3rd index of vector a (as defined above)?
+
+**Answer 5:**
+
+```{r}
+a[3]
+```
+
+An array is a multi-dimensional variable.  Use the following code to create an array that has values of 0 in each cell.  The `dim` argument in the function is the dimension of the array you are creating. `dim = 10` is a 10-element vector, and `dim = c(10, 20)` is a 10 x 20 matrix with 200 total elements. 
+
+Importantly, the first number is the vertical index (row), and the second number is the horizontal index (column).
+
+```{r}
+a <- array(0, dim = 10)
+b <- array(0, dim = c(10, 20))
+a
+b
+```
+
+**Question 6:** 
+
+What are the dimensions of array a and array b?  How many rows?  How many columns?
+
+**Answer 6: **
+
+a: 10 rows by 10 columns
+b: 10 rows by 20 columns
+
+The values in each cell of an array can be replaced using the index.  For example, you can replace the value in cell [4,5] with the number 10.  
+
+```{r}
+b[4, 5] <- 10
+```
+
+**Question 7:**  
+
+In array `b`, replace the value in the cell with column number 5 and row number 7 with the value of 100.  After replacing the value, type the command `b` to show the array.  Provide your code below.
+
+**Answer 7:**
+
+```{r}
+b[7,5] <- 100
+b
+```
+
+## Step 5: Explore the concept of a 'for loop'
+
+A ‘for loop’ steps through a sequence of numbers.  In a ‘for loop’ the variable before 'in' is the index variable and the numbers after are the sequence (in the case below -  from 1 to 10). Run the following code
+
+```{r}
+loop_length <- 10
+sequence <- seq(1, loop_length, by = 1)
+for(i in sequence){
+  print("Pass through loop")
+  print(i)
+}
+```
+
+You will see that i increased by 1 each time through the loop.  We can now use variable i, which changes through the loop, to access different rows or columns in an array.
+
+Imagine that you want to replace all of the cells in the 2nd row of the ‘b’ array with the value of 6.  You do the following:
+
+```{r}
+b[2, 1] <- 6
+b[2, 2] <- 6
+b[2, 3] <- 6
+b[2, 4] <- 6
+b[2, 5] <- 6
+b[2, 6] <- 6
+b[2, 7] <- 6
+b[2, 8] <- 6
+b[2, 9] <- 6
+b[2, 10] <- 6
+```
+
+Alternatively, you could do the following
+
+```{r}
+i <- 1
+b[2, i] <- 6
+i <- 2
+b[2, i] <- 6
+i <- 3
+b[2, i] <- 6
+i <- 4
+b[2, i] <- 6
+i <- 5
+b[2, i] <- 6
+i <- 6
+b[2, i] <- 6
+i <- 7
+b[2, i] <- 6
+i <- 8
+b[2, i] <- 6
+i <- 9
+b[2, i] <- 6
+i <- 10
+b[2, i] <- 6
+```
+
+Both require writing a lot of repetitive code and are prone to errors, especially with a large array. Notice how the only thing that differs is the column index (which increases from 1 to 10, just like the index i in the for loop above).  
+
+**Question 8:**  
+
+Use a ‘for loop’ to replace all of the cells in the 2nd row of the ‘b’ array with the value of 7.  Provide your code below.
+
+**Answer 8:**
+
+```{r}
+seq <- seq(1, 20, by=1)
+#Cleaner way: seq <- 1:1:20
+
+for(i in seq){
+  b[2, i] <- 7
+}
+```
+
+In the for-loop above, we used a vector called `sequence` to represent the vector of elements we wanted to loop through.  The same vector can be created using the following code
+
+```{r}
+1:loop_length
+```
+
+Using this idea, a for-loop is more commonly written as follows, where the `1:loop_length` is directly used in the for-loop call:
+
+```{r}
+loop_length <- 10
+for(i in 1:loop_length){
+  print("Pass through loop")
+  print(i)
+}
+
+```
+
+
+## Step 6: Grow a tree using a "for loop"
+
+The concept of a ‘for loop’ and an array can be combined to simulate the growth of an individual tree.  Imagine that the growth (net primary productivity) of a tree is 300 g C m-2 and is constant through time.
+
+```{r}
+npp <- 300
+```
+
+We want to predict the growth of the tree for 200 years
+
+```{r}
+simulation_years <- 200
+```
+
+Create an array to store the size of the tree each year.  This is a 1-D array (so it is actually a vector)
+
+```{r}
+veg <- array(data = NA, dim = c(simulation_years))
+```
+
+`veg` is a vector of `NA` (which means 'no value’) with a cell for each year.  Set the initial value (year 1) of 1 g C m-2
+
+```{r}
+veg[1] <- 1
+```
+
+Use a "for loop" to progress through the years.  One key is that you need to start the sequence at 2 because you already know the size of the tree at year 1.  To grow the tree, add growth (`npp`) to the size (biomass) of the tree in the previous year.  Subtracting 1 from the current index (e.g., `veg[i - 1]`) can index the biomass of the tree in the previous year.
+
+```{r}
+for(i in 2:simulation_years){
+  veg[i] <- veg[i - 1] + npp
+}
+```
+
+**Question 9:** 
+
+Print the values of vegetation biomass by typing `veg` in the code chunk below.  Are the values what you expect?  Why or why not?
+
+**Answer 9:** 
+
+The values in the vector represent the addition of 300 g C m-2 every year to the previous value, which is to be expected.
+
+```{r}
+veg
+```
+
+## Step 7: Simple plotting
+
+The code below plots using base R. If you are more familiar with ggplot, you can replace the code below with ggplot code.  
+
+Use the plot function to plot the size of the tree over time.  The plot function needs an x and y variable (and a bunch of optional stuff after that - like the ‘type’ option which gives us a line rather than points)
+
+```{r}
+#Create a vector of simulation years to use as the x-axis where the `by` argument is 1 because we want a value for each year.
+years <- seq(from = 1, to = simulation_years, by = 1)
+plot(x = years, y = veg, type = "l", xlab = "year", ylab = "vegetation carbon (gC m-2)")
+```
+
+**Question 10:** 
+
+What do you see in your plot?  
+
+**Answer 10:**
+
+Linear growth from 0-200 years representing the constant addition of npp every year. 
+
+## Step 8: Explore the concept of an ‘if-else statement’
+
+Variables can be numbers, letters, or logical statements.   A logical statement is either `TRUE` or `FALSE`.  An ‘if-else statement’ allows for a set of calculations to occur only when a variable is `TRUE`.  The following is an example
+
+```{r}
+print_text <- TRUE
+
+if(print_text){
+    print("Ecosystem Dynamics is the best ever!")
+} 
+```
+
+Did the text print below the chunk?  Now run the following
+
+```{r}
+print_text = FALSE
+
+if(print_text){
+  print("Ecosystem Dynamics is the best ever!")
+}
+```
+
+You will notice that the second one did not print text because `print_name` was `FALSE` so the calculation (e.g., print) did not occur (the area between `{ }`).  More commonly ‘if-else statements’ are used to compare two numbers. 
+
+```{r}
+a <- 1
+b <- 2
+if(a < b){
+  print("a is less than b")
+}
+
+if(a < 10){
+  print("a is less than 10")
+}
+```
+
+An ‘if-else statement’ can also provide an alternative calculation when the value in the if statement is FALSE
+
+```{r}
+if(a < b){
+  print("a is less than b")
+}else{
+  print("b is less than a")
+}
+```
+
+## Step 9: Uniform random variables
+
+Now that you can simulate the growth of an individual tree, you will work towards being able to simulate the death of an individual tree.  First, you will need to explore the concept of a uniform random variable.  A random variable is a value that is drawn from a probability distribution.  The normal probability distribution is one that you have likely learned about in a previous course.  In the case of the normal probability distribution, a value drawn from the distribution is most likely to be near the mean.  Extreme values beyond two deviations are much less likely.   A uniform random variable has a maximum and minimum value and all values between the maximum and minimum are equally likely.  Any value outside the maximum and minimum have a 0% chance of occurring.  Use the following use to explore the use of the uniform random variable.
+
+First, here is the help page on the function we will use to randomly pick a number from the uniform distribution
+
+```{r}
+?runif
+```
+
+To simulate a uniform random variable use the following code
+
+```{r}
+lower <- 0
+upper <- 1
+
+rvar <- runif(n = 1, min = lower, max = upper)
+rvar
+```
+
+**Question 11:** 
+
+What value did you get for `rvar`.  What value did you expect?  Run the runif function again.  Did you get a different answer?  Why?
+
+**Answer 11:**
+
+1st run returned .26, second returned .597. I expected to get a different value each run, but within the bounds set by the upper value of 1 and lower of 0.
+
+## Step 10:  Add mortality to tree simulation
+
+You are going to build on your growth calculations using the ‘for-loop’ and the uniform random variable to simulate the growth and death of an individual tree.  First, define the growth and define the mortality rates
+
+```{r}
+npp <- 300
+mortality <- 0.02
+```
+
+The mortality variable is the proportion of trees that die in a year or the probability that a single tree dies in a given year.   The value of 0.02 reflects a 2% chance of dying each year.  
+
+To simulate our tree, define, as you did above, the array describing the biomass of the tree in each year
+
+```{r}
+simulation_years <- 200
+veg <- array(NA, dim = c(simulation_years))
+veg[1] <- 0
+```
+
+Before proceeding, it is important to think of the tree as a space of ground where a tree grows rather than a single individual tree. Therefore, when a tree dies, a new tree replaces it. To simulate a tree dying, choose a uniform random number between 0 and 1 and ask whether the number is less than the mortality rate.  
+
+**Question 12:**  
+
+What proportion of years will the random number be less than the mortality rate?
+
+**Answer 12:**
+
+2% of the time
+
+If the random number is less than the mortality rate, kill the tree by setting the biomass equal to 0 g C m-2.  Use the following ‘for loop’ to simulate the space of ground that can be occupied by a single tree
+
+```{r}
+for(i in 2:simulation_years){
+  veg[i] <- veg[i - 1] + npp
+  rvar <- runif(n = 1, min = 0, max = 1)
+  if(rvar < mortality){  
+    veg[i] <-  0
+  }
+}
+```
+
+**Question 13.** 
+
+Plot the tree biomass over time using the plotting commands described above. 
+
+**Answer 13:**
+```{r}
+years <- seq(from = 1, to = simulation_years, by = 1)
+plot(x = years, y = veg, type = "l", xlab = "year", ylab = "vegetation carbon (gC m-2)")
+```
+
+**Question 14: ** 
+
+Describe what you see in your plot and how it relates to your code and an actual tree
+
+**Answer 14: **
+
+There is a linear section leading up to a return to zero that is representative of the constant growth of a tree until a random mortality event, triggered by the generation of a random number that is less than the mortality rate. 
+
+**Question 15:**  
+
+What ecological processes are represented by the variable NPP?
+
+**Answer 15:**
+
+NPP is the increase in biomass of the tree, reflected in gC m-2.
+
+**Question 16:**  
+
+What ecological processes are represented by the variable mortality?
+
+**Answer 16:**
+
+The random chance of a mortality event each year, due to any factors, such as disease, disaster, etc.
+
+**Question 17:**  
+
+How would you find realistic values for NPP and mortality?  Setting the value for these parameters in the model is called parameterizing your model.
+
+**Answer 17:**
+
+NPP likely varies with environmental conditions year-to-year, as does mortality. Also, mortality may be higher or lower during certain periods of the trees life, such as a seedling or older tree. 
