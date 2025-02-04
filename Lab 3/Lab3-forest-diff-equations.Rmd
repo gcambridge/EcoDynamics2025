@@ -75,18 +75,21 @@ plot(year, veg, type = 'l', xlab = 'years', ylab= 'Mean biomass (g m-2)')
 What is the difference between a stochastic and a deterministic process?  Is the differential equation above stochastic or deterministic?  Is the forest simulator from labs 1 and 2 stochastic or deterministic?  See Soetaert and Herman Chapter 3 Section 1.
 
 **Answer 2:**
+Stochastic processes often consider a degree of randomness that is attributed to the focus on an individual component/member of the system being modeling. Deterministic processes often consider the cumulative behavior/functionality of a large group of components, which have a more predictable "average" variability. The previous equation represents an deterministic process, as opposed to the stochastic models from labs 1 and 2.
 
 **Question 3:**  
 
-How do the forest dynamics from the differential equation above compare to the dynamics of the 2x2 forest, 5x5 forest, and 50x50 forests you simulated in Lab 2?  You can visually compare your plots from Lab 2 and describe the differences in text.  
+How do the forest dynamics from the differential equation above compare to the dynamics of the 2x2 forest, 5x5 forest, and 50x50 forests you simulated in Lab 2?  You can visually compare your plots from Lab 2 and describe the differences in text.
 
 **Answer 3**
+The "smoothness" of the plot increases with the forest dimensions, until the shift to include the differential equations, where then the plot is representing a continuous function.
 
 **Question 4:**  
 
 When do you think the differential equation approach to simulating ecosystem dynamics is appropriate rather than using a simulator that represents the growth and death of individual trees?
 
 **Answer 4:**
+Differential Equations may be more useful for modeling larger populations and when more factors affecting the modeled variable are considered, such as compounding mortality or growth factors/controls. Individual models maybe be more useful when these factors are better understood/verified to real-world conditions, and on a smaller population size of largely similar individuals. 
 
 
 ## Part 2: Simple decomposition model
@@ -152,61 +155,14 @@ Describe and compare the dynamics of the soil carbon pool with a k of 0.005 and 
 **Answer 5:**
 A larger k of .005 vs .001 results in a lower equilibrium stock in the soil, as decomposition is greater. Greater decomposition factor results in reaching the equilibrium value sooner. 
 
-(blue is soil stock with k of .001, red soil stock with k of .005, and black is the vegetation biomass)
-
-
-```{r}
-simulation_years <- 1000  #total number of years you want to simulate
-soil <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
-soil_1 <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
-veg <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
-
-soil[1] <- 1000  #initializing the soil stock to be 1000 g C m-2
-soil_1[1] <- 1000  #initializing the soil stock to be 1000 g C m-2
-veg[1] <- 1  #initializing the vegetation biomass in year 1 to be 1
-
-u <- 0.02  #mortality rate
-k <- .005 #decomposition rate
-k_1 <- .001
-
-npp <- 300  #growth rate
-u <- 0.02
-
-dt <- 1 #number of years for each time step
-
-for(i in 2:simulation_years){
-  
-  #Growth of forest
-  dBdt <- npp - veg[i-1] * u
-  veg[i] <- veg[i-1] + dBdt * dt
-  
-  #Building soil stock with k = .005
-  dSdt <- veg[i-1]*u - soil[i-1]*k
-  soil[i] <- soil[i-1] + dSdt * dt
-  
-  #Building soil stock with k = .001
-  dSdt_1 <- veg[i-1]*u - soil_1[i-1]*k_1
-  soil_1[i] <- soil_1[i-1] + dSdt_1 * dt
-  
-}
-
-year <- seq(1, simulation_years, 1)
-ylimits <- range(c(veg, soil, soil_1))
-plot(year, veg, type = 'l', xlab = 'years', ylab= 'Mean Soil Stock (g m-2)',  ylim = ylimits)
-points(year, soil, type= 'l' , col = 'red')
-points(year, soil_1, type= 'l' , col = 'blue')
-
-
-
-```
-
+(blue is soil stock with k of .001, red is soil stock with k of .005)
 
 **Question 6: **: 
 
 What are the units of k?
 
 **Answer 6:**
-Time
+"Per unit of time", k is a factor for the amount of decay per the unit of time.
 
 The final step in building a simple forest ecosystem model that can predict total carbon storage is to combine the vegetation model and the soil carbon model.
 
@@ -220,9 +176,7 @@ List all the names of the arrows in the FES textbook Figure 2.1 that are associa
 
 **Answer 7: **
 
-
 NPP (NPP): GPP, Autotrophic Respiration, Oxidation, Herbivory
-
 
 Mortality (u * Bt): Herbivory, Litterfall, Death (Herbivores and of Vegetation), Herbivore excretion, exudation 
 
@@ -252,6 +206,13 @@ Tip: Your solution will only have one for-loop.  You will NOT have a different l
 ```{r}
 #insert set of differential equations here that are contained in the for loop (see above)
 
+#Growth of forest
+dBdt <- npp - veg[i-1] * u
+veg[i] <- veg[i-1] + dBdt * dt
+  
+#Building soil stock with k = .005
+dSdt <- veg[i-1]*u - soil[i-1]*k
+soil[i] <- soil[i-1] + dSdt * dt
 ```
 
 **Question 9:**  
@@ -260,6 +221,47 @@ What is the equilibrium carbon stock of the entire ecosystem (vegetation + soil)
 
 **Answer 9:**
 
+The equilibrium value for the total carbon stock approaches 75000
+
+```{r}
+simulation_years <- 10000  #total number of years you want to simulate
+soil <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+veg <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+total <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+
+soil[1] <- 0  #initializing the soil stock to be 1000 g C m-2
+veg[1] <- 0  #initializing the vegetation biomass in year 1 to be 1
+total[1] <- 1
+
+u <- 0.02  #mortality rate
+k <- .005 #decomposition rate
+
+npp <- 300  #growth rate
+u <- 0.02
+
+dt <- 1 #number of years for each time step
+
+for(i in 2:simulation_years){
+  
+  #Growth of forest
+  dBdt <- npp - veg[i-1] * u
+  veg[i] <- veg[i-1] + dBdt * dt
+  
+  #Building soil stock with k = .005
+  dSdt <- veg[i-1]*u - soil[i-1]*k
+  soil[i] <- soil[i-1] + dSdt * dt
+  total[i] <- veg[i] + soil[i]
+  print(total[i])
+}
+
+year <- seq(1, simulation_years, 1)
+ylimits <- range(c(veg, soil, total))
+plot(year, veg, type = 'l', xlab = 'years', ylab= 'Mean Soil Stock (g m-2)',  ylim = ylimits)
+points(year, soil, type= 'l' , col = 'red')
+points(year, total, type= 'l' , col = 'blue')
+
+```
+
 
 **Question 10:** 
 
@@ -267,13 +269,12 @@ What is the change in vegetation carbon (dB/dt) and change in soil carbon (dS/dt
 
 **Answer 10:** 
 
+at equilibrium dB/dt and dS/dt will both be 0
+
 ## Part 3: Apply model
 
 You are charged with finding a way to double the carbon stored in a forest ecosystem.  Using the model with vegetation and soils, find a parameter set (NPP, u, k) that results in a doubling of total carbon at equilibrium.  Find the parameters using trial and error (i.e., just play around with parameters and decide on a set).  Playing around with parameters helps build an intuition for how the model works.
 
-```{r}
-#INSERT CODE
-```
 
 **Question 11:** 
 
@@ -281,8 +282,71 @@ Provide a plot of time vs. total carbon stocks using your new parameters.
 
 **Answer 11:**
 
+Doubling npp would result in doubling the total forest stock, how ever this is a very unrealistic capacity for a forest manager. A more realistic adjustment would be to slow the rate of decomposition and increase the mortality rate, as is done in wetlands or bottomland forests by increasing inundation of the soils. A mortality rate of .8 and a decomposition rate of .002 results in a near perfect doubling of the equilibrium stock in the forest system.
+
 ```{r}
-#Insert figure code
+simulation_years <- 3000  #total number of years you want to simulate
+soil <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+veg <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+total <- array(NA, dim = c(simulation_years))  #creating the array to store the yearly vegetation biomass
+
+soil[1] <- 0  #initializing the soil stock to be 1000 g C m-2
+veg[1] <- 0  #initializing the vegetation biomass in year 1 to be 1
+total[1] <- 1
+
+u <- 0.02  #mortality rate
+k <- .005 #decomposition rate
+
+npp <- 300  #growth rate
+
+#Scenario 2
+soil_1 <- array(NA, dim = c(simulation_years))  
+veg_1 <- array(NA, dim = c(simulation_years))  
+total_1 <- array(NA, dim = c(simulation_years))  
+
+soil_1[1] <- 0  
+veg_1[1] <- 0  
+total_1[1] <- 1
+
+u_1 <- 0.8 
+k_1 <- .002 
+
+npp_1 <- 300  
+
+dt <- 1 #number of years for each time step
+
+
+for(i in 2:simulation_years){
+  
+  #Growth of forest
+  
+    #Scenario 1:
+    dBdt <- npp - veg[i-1] * u
+    veg[i] <- veg[i-1] + dBdt * dt
+    
+    #Scenario 2:
+    dBdt_1 <- npp_1 - veg_1[i-1] * u_1
+    veg_1[i] <- veg_1[i-1] + dBdt_1 * dt
+  
+  #Building soil stock with k = .005
+  #Scenario 1:
+  dSdt <- veg[i-1]*u - soil[i-1]*k
+  soil[i] <- soil[i-1] + dSdt * dt
+  total[i] <- veg[i] + soil[i]
+  
+  #Scenario 2:
+  dSdt_1 <- veg_1[i-1]*u_1 - soil_1[i-1]*k_1
+  soil_1[i] <- soil_1[i-1] + dSdt_1 * dt
+  total_1[i] <- veg_1[i] + soil_1[i]
+}
+
+print(paste("Scenario 1 Equilibrium: ", total[simulation_years], "Scenario 2 Equilibrium: ", total_1[simulation_years], "2v1: ", total_1[simulation_years]/total[simulation_years]))
+
+year <- seq(1, simulation_years, 1)
+ylimits <- range(c(total, total_1))
+plot(year, total, type = 'l', xlab = 'years', ylab= 'Mean Total Stock (g m-2)',  ylim = ylimits)
+points(year, total_1, type= 'l' , col = 'red')
+
 
 ```
 
