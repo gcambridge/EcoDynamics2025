@@ -22,8 +22,8 @@ In the last two labs, you constructed a simple model of forest vegetation dynami
 What are the inputs and outputs of the tree biomass stock in your forest model?  
 
 **Answer 1:**
-In: npp
-Out: mortality
+Inputs: npp
+Outputs: mortality
 
 
 You can describe the macroscopic behavior of the forest using a differential equation rather than needing to simulate the growth and random death of each individual tree.  A differential equation is an equation that describes the change in a ‘stock’ over time (think about a derivative that you learned in calculus).  The source and sink terms are biomass transfers into or out of the stock.  There can be as many source or sink terms as appropriate for the system you are modeling.  
@@ -189,7 +189,7 @@ Draw a conceptual diagram of the model with vegetation biomass and soil carbon. 
 To answer Question 8, create a box and arrow diagram in PowerPoint, save it as an image on your hard drive, and use the following code to insert your image into R markdown. 
 
 **Answer 8:**
-![Caption for the picture.](/path/to/image.png)
+![Conceptual Diagram of the vegetation and soil stock model](C:\Users\gavri\Documents\diagram\Slide1.PNG)
 
 Use R to solve the set of differential equations using the same approach as above but with two stocks rather than only one.  Therefore, your model will have four lines of code within the for-loop that loops over time: 
 
@@ -251,7 +251,6 @@ for(i in 2:simulation_years){
   dSdt <- veg[i-1]*u - soil[i-1]*k
   soil[i] <- soil[i-1] + dSdt * dt
   total[i] <- veg[i] + soil[i]
-  print(total[i])
 }
 
 year <- seq(1, simulation_years, 1)
@@ -282,7 +281,6 @@ Provide a plot of time vs. total carbon stocks using your new parameters.
 
 **Answer 11:**
 
-Doubling npp would result in doubling the total forest stock, how ever this is a very unrealistic capacity for a forest manager. A more realistic adjustment would be to slow the rate of decomposition and increase the mortality rate, as is done in wetlands or bottomland forests by increasing inundation of the soils. A mortality rate of .8 and a decomposition rate of .002 results in a near perfect doubling of the equilibrium stock in the forest system.
 
 ```{r}
 simulation_years <- 3000  #total number of years you want to simulate
@@ -308,8 +306,8 @@ soil_1[1] <- 0
 veg_1[1] <- 0  
 total_1[1] <- 1
 
-u_1 <- 0.8 
-k_1 <- .002 
+u_1 <- 0.3
+k_1 <- .002
 
 npp_1 <- 300  
 
@@ -340,7 +338,7 @@ for(i in 2:simulation_years){
   total_1[i] <- veg_1[i] + soil_1[i]
 }
 
-print(paste("Scenario 1 Equilibrium: ", total[simulation_years], "Scenario 2 Equilibrium: ", total_1[simulation_years], "2v1: ", total_1[simulation_years]/total[simulation_years]))
+print(paste("Scenario 1 Equilibrium: ", total[simulation_years], "Scenario 2 Equilibrium: ", total_1[simulation_years], "Scenario 2/ Scenario 1: ", total_1[simulation_years]/total[simulation_years]))
 
 year <- seq(1, simulation_years, 1)
 ylimits <- range(c(total, total_1))
@@ -355,6 +353,7 @@ points(year, total_1, type= 'l' , col = 'red')
 How does your new set of parameters compare to the original set of parameters?
 
 **Answer 12:**
+Increasing the mortality rate from .02 to .3 can reflect the increased stresses from increased inundation on trees that may not be well adapted to wetter conditions. Decreasing the decomposition rate from .005 to .002 is reflective of the flip side of these modifications, where inundation restricts oxygenation of soils and thus aerobic respiration of decomposing microbes.
 
 
 **Question 13:** 
@@ -362,6 +361,8 @@ How does your new set of parameters compare to the original set of parameters?
 The parameters that you changed are a simplified representation of actual ecosystem processes.  Mechanistically, how could you potentially manage or alter the processes in the ecosystem to result in the parameter changes that you used to double the carbon? 
 
 **Answer 13:**
+Doubling npp would result in doubling the total forest stock, how ever this is a very unrealistic capacity for a forest manager. A more realistic adjustment would be to slow the rate of decomposition and increase the mortality rate, as is done in wetlands or bottomland forests by increasing inundation of the soils. A mortality rate of .3 and a decomposition rate of .002 results in a near perfect doubling of the equilibrium stock in the forest system.
+
 
 
 **Question 14:** 
@@ -369,4 +370,4 @@ The parameters that you changed are a simplified representation of actual ecosys
 '...some models are useful'.  How did you find this modeling exercise useful?
 
 **Answer 14:**
-
+I found the practice of describing the role of derivatives, graphically and in equations, in ecological practice. the considerations of increasing carbon storage is the foundation of my project involving the re-wetting of the Great Dismal Swamp to retain soil and litter carbon. 
