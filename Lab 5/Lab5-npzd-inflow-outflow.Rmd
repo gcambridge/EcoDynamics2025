@@ -1,0 +1,113 @@
+---
+title: "Ecosystem Dynamics Lab 5"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Goals:
+-	Practice adding a new flux to a differential equation model
+-	Apply the simple NPZD model to a new science question
+-	Practice analyzing model behavior
+
+We will apply our NPZD model (S&H Section 2.9.1) to investigate the influence of nitrogen pollution on our ecosystem. The current model has no N inputs or outputs, so we need to add the fluxes.  
+
+# Step 1: Conceptual Model
+
+**Question 1:**  
+
+Draw a conceptual diagram (building on S&H figure 2.20 diagram) that adds two new fluxes:  Dissolved inorganic nitrogen (DIN) input from agricultural run-off and DIN output from a stream that drains the lake.
+
+**Answer 1:**
+![](INSERT PATH TO DIAGRAM)
+
+Modify your model so that the two new fluxes are now included.  The modifications will not require adding any new stocks, but you will have to add two new parameters. 
+
+#Step 2: Code Model
+
+```{r}
+#INSERT MODEL HERE
+
+```
+
+#Step 3: Parameterize Model
+
+We are going to assume that the DIN output is a first-order process controlled by the DIN in the lake. The DIN output rate parameter will be the turnover rate of water in the lake (1 / residence time). Assume that the lake has a 720-day residence time.
+
+We will assume that the DIN input is a constant equal to 0.0012 mmol N m-3 day-1.
+
+```{r}
+#INSERT PARAMETERS HERE
+```
+
+#Step 4: Initialize Model
+
+```{r}
+#INSERT INITIAL CONDITIONS HERE
+yini <- c(
+  PHYTO = 1, #mmolN m-3
+  ZOO = 0.8, #mmolN m-3
+  DETRITUS = 1, #mmolN m-3
+  DIN = 9) #mmolN m-3
+```
+
+
+#Step 5: Verify Model
+
+**Question 2:** 
+
+What is the mid-summer stock of phytoplankton after 10 years? Are the dynamics reasonable? Include a plot of the time series from the simulation.  
+
+**Answer 2:** 
+
+```{r}
+
+```
+
+#Step 6: Apply model
+
+To meet regulations, the lake needs the summer phytoplankton population to not exceed 2 mmol N m^-3 within the next 10 years.
+
+**Question 3:** 
+
+What is the smallest reduction in agriculture run-off that will achieve this goal? Give your answer as a percentage reduction from the baseline simulation reported in question 2
+
+**Answer 3:**
+
+```{r}
+
+
+```
+
+**Question 4:**
+
+Provide a plot of phytoplankton over the 10-year period with and without the reduction in run-off.  Ensure the figure includes a legend, properly labeled axes, and a title.
+
+**Answer 4:**
+
+```{r}
+
+
+```
+
+#Step 7: Improve the model
+
+**Question 5:**  
+
+You are an ecosystem scientist tasked with improving the model by better parameterizing the model that it models phytoplankton more realistically.  To address this task, you are designing a field-sampling program to measure the model's parameters.  Which parameter should get the most attention in the field program and why?  Provide a quantitative assessment, including a description of the approach you used to make the assessment.
+
+Focus on the following 4 parameters: maxNuptake, maxGrazing, kspar, ksdin   
+
+**Answer 5:**
+
+```{r}
+
+
+```
+
+
+
+

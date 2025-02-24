@@ -1,0 +1,102 @@
+---
+title: "deSolve"
+author: "Quinn Thomas"
+date: "2023-01-26"
+output: html_document
+---
+
+##The efficient and easy solver package
+
+I recommend using the `deSolve` package because it does the hard work for you, allowing you to focus on the science rather than the computation.  After defining the differential equation function (i.e., the science!), defining the parameters, and defining the initial conditions, the only command you need to solve the model is:
+
+```
+output <- ode(y = yini, times = times, func = simple_forest_model, parms = parms, method = "ode45"
+```
+
+Note that the function `ode` returns an array that has the time step values, states, and other values (the fluxes) as columns. Therefore, you need to examine the array first and reference the correct columns when visualizing and analyzing the output.  Just so you know, the names of the flux columns are weird because they attach extra names to the column name.
+
+```{r}
+
+#HERE IS OUR MODEL
+simple_forest_model <- function(t, states, parms){
+  
+  #"UNPACK" STATES TO THE ACTUAL NAMES
+  VEG <- states[1]
+  SOIL <- states[2]
+
+  #"UNPACK" parms TO THE ACTUAL NAMES
+  npp <- parms[1]
+  mortalityRate <- parms[2]
+  krate <- parms[3]
+
+  #WRITE FLUX EQUATIONS HERE
+  VegGrowth <- npp 
+  VegMortality <- VEG * mortalityRate
+  SoilDecomposition <- SOIL * krate
+
+  #WRITE DERIVATIVES HERE
+  dVEG_dt <- VegGrowth - VegMortality
+  dSOIL_dt <- VegMortality - SoilDecomposition
+
+  #RETURN A LIST OF THE DERIVATIVES
+  return(list(c(dVEG_dt = dVEG_dt, 
+                dSOIL_dt = dSOIL_dt),
+              c(VegGrowth = VegGrowth, 
+                VegMortality = VegMortality, 
+                SoilDecomposition = SoilDecomposition)))
+}
+
+#PARAMETERS
+parms <- c(
+  300,  #npp, g C m-2 yr-1
+  0.02, #mortalityRate, yr-1
+  0.01) # krate, yr-1
+
+#INITIAL STATES (THE MODEL STARTING POINT)
+yini <- c(
+  veg = 1, #VEG, g C m-2
+  soil = 1000) #SOIL, g C m-2
+
+simulation_time <- 400 #YEARS
+dt <- 10
+times <- seq(1, simulation_time, by = dt)
+
+#THIS IS WHERE THE MODEL IS RUN.  MAKE SURE THE FUNCTION ("func") 
+#MATCHES YOUR FUNCTION NAME ABOVE
+#"out" IS MODEL STATES AT EACH TIME STEP IN "times"
+if (!"deSolve" %in% installed.packages()) install.packages("deSolve")
+library(deSolve)
+
+output <- ode(y = yini, 
+              times = times, 
+              func = simple_forest_model, 
+              parms = parms, 
+              method = "ode45",
+              weather_df = noaa_data)
+
+#-------------------------------------------------
+#Actual solution
+
+#note: x is time
+solved_vegetation_model <- function(x, npp, mortalityRate){
+  t <- x
+  c <- (1 - (npp / mortalityRate))
+  B <- (npp / mortalityRate) + c * exp(-mortalityRate * t)
+}
+
+#This is from the model
+ylim <- range(c(output[, 2],output[, 3]))
+plot(output[, 1], output[, 2], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "carbon stocks (g C m-2)")
+points(output[, 1], output[, 3], type= "l", col = "black", lty = "dashed")
+legend("bottomright", c("Vegetation", "Soil"), lty = c("solid", "dashed"),
+       col = c("black", "black"), bty = "n")
+
+#This adds the analytical solution
+curve(solved_vegetation_model(x, npp = 300, mortalityRate = 0.02), 
+      from = 1,to = 400, ylim = c(0, 50000), xlab = "time", 
+      ylab = "vegetation biomass", col = "gray", lwd = 10, add = TRUE)
+points(output[, 1] ,output[, 2], type = "l", col = "black")
+legend("topleft", legend = c("Analytical Solution", "deSolve method"), 
+       col = c("gray", "black"), lty = c(1, 1), bty = "n")
+```

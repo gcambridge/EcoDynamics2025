@@ -1,0 +1,149 @@
+---
+title: "Lab 5 In class"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## NPZD Model 
+
+Nutrients, Plankton, Zooplankton, and Detritus (NPZD) Model.
+
+### Drivers
+
+First we start with a function will we use to simulate how solar energy from the sun changes over the year. Solar energy the environmental "driver" of our model. The function is used in our differential equation below.
+
+```{r}
+light_function <- function(x){
+  t <- x
+  0.5 * (540 + 440 * sin(2 * pi * t / 365 - 1.4))
+}
+
+curve(light_function(x), 
+      from = 1, to = 730, 
+      ylab = "umol/m2/s", 
+      xlab = "# days", 
+      main = "Light input")
+```
+### Model 
+
+Here is our differential equation model based on our conceptual model.  
+
+```{r}
+NPZD_model <- function(t, states, parms){
+  
+  #unpack states
+  PHYTO <- states[1]
+  ZOO <- states[2]
+  DET <- states[3]
+  DIN <- states[4]
+  
+  #unpack parms
+  maxUptake <- parms[1]
+  kspar <- parms[2] #Sunlight Limiting
+  ksdin <- parms[3] #Nitrogen limiting
+  maxGrazing <- parms[4]
+  ksphyto <- parms[5]
+  pFeces <- parms[6] #proportion of waste to feces
+  excretionRate <- parms[7]
+  mortalityRate <- parms[8]
+  mineralizationRate <- parms[9]
+  Chl_Nratio <- parms[10]
+  
+  #Calculate the environment (note that this depends on time)
+  #50% of light is PAR
+  PAR <- 0.5 * (540 + 440 * sin(2 * pi * t / 365 - 1.4)) 
+  
+  #calculate fluxes
+  fDIN <- DIN / (DIN + ksdin)
+  fLight <- PAR / (PAR + kspar)
+  uptake <- maxUptake * PHYTO * fDIN * fLight #min(c(fDIN, fLight))
+  
+  fPHYTO <- PHYTO / (PHYTO + ksphyto)
+  grazing <- maxGrazing * ZOO * fPHYTO
+  
+  feces_production <- grazing * pFeces
+  
+  excretion <- excretionRate * ZOO
+  
+  zoo_mortality <- mortalityRate * ZOO^2
+  
+  mineralization <- mineralizationRate * DET
+  
+  #calculate extra outputs
+  Chlorophyll <- PHYTO * Chl_Nratio
+  
+  #calculate derivatives
+  dPHYTO_dt <- uptake - grazing
+  dZOO_dt <- grazing - feces_production - zoo_mortality - excretion
+  dDETRITUS_dt <- zoo_mortality + feces_production - mineralization
+  dDIN_dt <- excretion + mineralization - uptake
+
+ #return the list of derivatives plus any other variables that you are interested in
+  
+  return(list(c(dPHYTO_dt = dPHYTO_dt, # the rates of change
+                dZOO_dt = dZOO_dt,
+                dDETRITUS_dt = dDETRITUS_dt,
+                dDIN_dt = dDIN_dt),
+              # other output variables
+              c(Chlorophyll = Chlorophyll, 
+                PAR = PAR)))         
+}
+
+```
+
+### Parameters
+
+```{r}
+parms <- c(
+  1.0,  #maxUptake INSERT UNITS
+  120,  #kspar INSERT UNITS
+  0.5,  #ksdin INSERT UNITS
+  1.0,  #maxGrazing INSERT UNITS
+  1.0,    #ksphyto INSERT UNITS
+  0.3,  #pFaeces INSERT UNITS
+  0.1,  #excretionRate INSERT UNITS
+  0.4,  #mortalityRate INSERT UNITS
+  0.1,  #mineralizationRate INSERT UNITS
+  1.0)    #Chl_Nratio INSERT UNITS
+```
+
+### Initial conditions
+
+```{r}
+yini <- c(
+  PHYTO = 1, #INSERT UNITS
+  ZOO = 0.8,  #INSERT UNITS
+  DETRITUS = 1,  #INSERT UNITS
+  DIN = 9)  #INSERT UNITS
+```
+
+### Solve model
+
+```{r}
+#Use DeSolve to integrate 
+library(deSolve)
+
+simulation_time <- 365 * 2
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+output <- ode(y = yini, times = times, func = NPZD_model, parms = parms, method = "ode45")
+```
+
+### Visualize output
+
+```{r}
+#Plot the model output
+#First convert output to a data frame
+output <- as.data.frame(output)
+par(mfrow = c(2, 3))
+plot(times, output$PAR, xlab = "time (days)", ylab = "umol/m2/s", main = "PAR", type = "l")
+plot(times, output$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton", type = "l")
+plot(times, output$Chlorophyll, xlab = "time (days)", ylab = "ug/l", main = "Chlorophyll", type = "l")
+plot(times, output$ZOO, xlab = "time (days)", ylab = "mmolN/m3", main = "Zooplankton", type = "l")
+plot(times, output$DIN, xlab = "time (days)", ylab = "mmolN/m3",main="DIN", type = "l")
+plot(times, output$DETRITUS, xlab = "time (days)", ylab = "mmolN/m3", main = "DETRITUS", type = "l")
+```

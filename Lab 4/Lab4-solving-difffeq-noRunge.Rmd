@@ -1,0 +1,257 @@
+---
+title: 'Ecosystem Dynamics: Lab 4'
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, root.dir = FALSE)
+```
+
+## Goals for lab
+
+-	Apply skills used to solve differential equations to a new problem
+-	Practice the use of a standardized approach to coding differential equations in R
+-	Demonstrate the ability to use Euler and deSolve to solve a differential equation
+-	Demonstrate the ability to use the ‘curve’ function to visualize a function
+-	Practice writing differential equations from a conceptual model
+
+## Solving differential equations
+
+The logistic equation is a classic equation used to simulate the dynamics of a population (N; in individuals m-2) that has a carrying capacity.  Read about the formula on S&H Chapter 2 page 45.  The equation is:
+
+$$\frac{dN}{dt} = rN(1-\frac{N}{K})$$
+
+where r and K are parameters: r is the per-capita growth rate (`individuals individual^-1 yr^-1`), and K is the carrying capacity (`individuals m^-2`).  The key to understanding a differential equation is to remember that it predicts the rate of change of a stock rather than the size of a stock.  Therefore, we do not directly know the size of a stock at a particular time from the equation; we only know how it changes.  To get the size of the stock at a future time we need to:
+
+1) Numerically solve the differential equation using a computer like we did in Lab 3
+
+or 
+
+2) Use calculus to integrate the equation by hand and solve for an equation were the lefthand side is biomass (a stock) rather than biomass change (dB/dt).  This equation is called the general solution.
+
+The general solution for the logistic growth equation is:
+
+$$N(t) = \frac{K}{1 + {ce}^{-rt}}$$
+where `N(t)` is the population size at a particular time (`t`) and `c` is the integration constant.  You know the parameters `r` and `K` but do not know `c` without solving for it.  For example if you know that 
+
+$$N(0) = {N_{o}}$$
+
+you can set t = 0 and N(t) = No and solve for c.  Once you solve for c the equation is called the particular solution.
+
+**Question 1**: 
+
+Solve for the c given that N(0) = No.
+
+**Answer 1**:
+C = K/N(0) - 1
+
+Plugging C back into N(t): 
+N(t) = K / 1 + (K/n - 1) * e^-rt
+
+To plot the logistic equation, use the curve function in R (see examples from this lab's materials).  I really like the curve function because it is an easy tool for visualizing equations that I see in papers.  To use the curve function, first write a function for the particular solution that plots population as a function of time.
+
+```{r}
+logistic_growth <- function(x, No, K, r){
+  #note that the function MUST have x as the first argument and x is the thing that R will vary to make the curve.  I always convert the x to the variable that it represents in the code (in this case, the variable t)
+  t <- x
+  return <- K / (1 + ((K/No) - 1) * exp(-r*t))
+}
+```
+
+**Question 2:** 
+
+Plot the particular solution for t 0 through 100 years with the following parameter values.
+
+1)  r = 0.1, K = 10, and No = 1
+
+2)  r = 0.1, K = 30, and No = 1
+
+3)  r = 0.1, K = 10, and No = 20
+
+Use the curve function to generate the plot.  You can use the `add=TRUE` option in the curve function to plot the curve on an existing plot.  Paste the plot code below.
+
+**Answer 2**:
+
+```{r}
+  curve(logistic_growth(x, No = 1, K = 10, r = .1),  ylim = c(0, 30), from = 0, to = 400, xlab = "time", ylab = "N (individual / m2)")
+  curve(logistic_growth(x, No = 1, K = 30, r = .1), from = 0, to = 400, add=TRUE, col="blue")
+  curve(logistic_growth(x, No = 20, K = 10, r = .1), from = 0, to = 400, add=TRUE, col = "red")
+```
+
+**Question 3:** 
+
+Describe how varying `K` and `N0` influences the shape of the curve.
+
+**Answer 3:**
+Varying K influences the magnitude of the equilibrium "target", or the line the curve approaches as it reaches equilibrium where dN/dT = 0. This is the carrying capacity in many models.
+
+Varying No influences the decay/growth nature of the curve. If the No exceeds the equilibrium value, the curve follows logistic decay to reach equilibrium
+
+**Question 4:** 
+
+Write a function in R describing the logistic differential equation (not the solution).  Use the function form that we covered for the simple forest model earlier in the lab.  Paste function below.
+
+**Answer 4**:
+```{r}
+logistic_diffEq <- function(x, No, K, r){
+ 
+  dN_dt <- r*N (1-(N/K))
+  
+  return(dN_dt)
+}
+```
+
+**Question 5:** 
+
+Solve the logistic growth equation (r = 0.1, K=10, and No= 1) using the **Euler method**.  Run the model for 400 years with time steps of 1,10, and 40 years.  Paste code and a plot of the three simulations below (put all three simulations on the same plot)
+
+**Answer 5**:
+```{r}
+logistic_model <- function(t, states, parms){
+  N <- states[1]
+  
+  r <- parms[1]
+  K <- parms[2]
+
+  dN_dt <- r*N*(1-(N/K))
+  return(list(c(dN_dt)))
+}
+```
+
+```{r}
+
+
+#Parameters:
+parms <- c(0.1, 10)
+
+#Initial States:
+Nini <- c(No = 1)
+
+#Time length and step
+t_length <- 400
+dt_1 <- 1
+times_1 <- seq(1, t_length, by=dt_1)
+
+dt_10 <- 10
+times_10 <- seq(1, t_length, by=dt_10)
+
+dt_40 <- 40
+times_40 <- seq(1, t_length, by=dt_40)
+
+#states vector
+nstates <- 1
+states_1 <- array(NA, dim = c(length(times_1), nstates))
+states_1[1, ] <- Nini
+
+states_10 <- array(NA, dim = c(length(times_10), nstates))
+states_10[1, ] <- Nini
+
+states_40 <- array(NA, dim = c(length(times_40), nstates))
+states_40[1, ] <- Nini
+
+for(t in 2:length(times_1)){
+  derivatives_1 <- logistic_model(t = times_1[t],
+                                states = states_1[t-1,],
+                                parms = parms)
+  states_1[t,1] <- states_1[t-1, 1] + derivatives_1[[1]][1] * dt_1
+}
+
+for(t in 2:length(times_10)){
+  derivatives_10 <- logistic_model(t = times_10[t],
+                                states = states_10[t-1,],
+                                parms = parms)
+  states_10[t,1] <- states_10[t-1, 1] + derivatives_10[[1]][1] * dt_10
+}
+
+for(t in 2:length(times_40)){
+  derivatives_40 <- logistic_model(t = times_40[t],
+                                states = states_40[t-1,],
+                                parms = parms)
+  states_40[t,1] <- states_40[t-1, 1] + derivatives_40[[1]][1] * dt_40
+}
+
+ylim <- range(c(states_1[, 1],states_10[, 1]))
+plot(times_1, states_1[, 1], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "N(individual/m^2")
+
+points(times_10, states_10[, 1], type = "l", col = "red", lty = "solid")
+points(times_40, states_40[, 1], type = "l", col = "blue", lty = "solid")
+
+
+legend("bottomright", c("1 Year", "10 Year", "40 Year"), lty = c("solid", "solid", "solid"), 
+       col = c("black", "red", "blue"), bty = "n")
+```
+
+**Question 6**: 
+
+Question 6: Solve the logistic growth (r = 0.1, K=10, and No= 1) using the **deSolve method**. Run the model for 400 years with time steps of 1, 10, and 40 years (r = 0.1, K = 10, and No = 1).  Paste code and a plot of the three simulations below. (put all three simulations on the same plot)
+
+**Answer 6**:
+```{r}
+#INSERT CODE TO SOLVE THE DIFFERENTIAL EQUATION WITH THE DIFFERENT TIME STEPS
+library(deSolve)
+
+output_1 <- ode(y=Nini,
+                times = times_1,
+                func = logistic_model,
+                parms = parms,
+                method = "ode45")
+
+
+output_2 <- ode(y=Nini,
+                times = times_10,
+                func = logistic_model,
+                parms = parms,
+                method = "ode45")
+
+
+output_3 <- ode(y=Nini,
+                times = times_40,
+                func = logistic_model,
+                parms = parms,
+                method = "ode45")
+```
+
+```{r}
+#INSERT PLOT
+ylim <- range(c(output_1[, 2], output_2[, 2], output_3[, 2]))
+plot(output_1[, 1],output_1[,2], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "N (Individuals/ m^2")
+points(output_2[, 1], output_2[, 2], type= "l", col = "red")
+points(output_3[, 1], output_3[, 2], type= "l", col = "blue")
+legend("bottomright", c("1 Year", "10 Year", "40 Year"), lty = c("solid"),
+       col = c("black", "red", "blue"), bty = "n")
+
+```
+
+**Question 7:**  
+
+Which method (Euler or deSolve) is most accurate across all the time-steps?
+
+**Answer 7:**
+
+The deSolve method was the most accurate across the three timesteps, with the 40 year time step in the deSolve method being much more similar to the 1 year time step, when compared to the Euler Method where the curve quickly departs from the trend set in the 1 and 10 year curves.
+
+##Translating conceptual diagrams to differential equations
+
+Here is a conceptual diagram for a simple model describing the forest nitrogen cycle.  The boxes are stocks (Nv,NL, Nmin, Nsom), and the arrows are the fluxes. To keep the exercise general, the fluxes are just given as numbers (F1, F2, etc.)  
+
+![](C:/Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 4\nitrogen_cycle_figure.png)
+
+
+**Question 8:** 
+
+Write the system of differential equations that describes the figure above.  There will be an equation for each stock, and use the flux names to write the balance equation for each stock.
+
+**Answer 8:**
+
+Nv = F1 + F8 - F2
+
+NL = F2 + F4 - F3
+
+Nsom = F3 - F5 - F6
+
+Nmin = F6 - F7 - F8 - F4
+
+

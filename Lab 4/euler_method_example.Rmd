@@ -1,0 +1,248 @@
+---
+title: "Solving Differential Equations"
+output:
+  word_document: default
+  html_document: default
+---
+
+## General differential equation form
+
+Last week, you coded and solved a simple two-state differential equation.  This week, we will work on formalizing a format that I want you to use throughout the course.  I want you to use the format because: 
+
+1.  It requires you to be explicit about the states, fluxes, parameters, and initial conditions in the model that you are building.
+2.  It allows the separation of building the scientific model (this occurs in a function) and numerically solving the model (this occurs outside the function and can use a package).
+3.  It allows you to use an R function to solve the differential equations, allowing you to focus on the scientific part of the model.
+
+Here is the model function applied to the forest model that we constructed last week:
+
+```{r}
+#HERE IS OUR MODEL
+simple_forest_model <- function(t, states, parms){
+  
+  #"UNPACK" STATES TO THE ACTUAL NAMES
+  VEG <- states[1]
+  SOIL <- states[2]
+
+  #"UNPACK" parms TO THE ACTUAL NAMES
+  npp <- parms[1]
+  mortalityRate <- parms[2]
+  krate <- parms[3]
+
+  #WRITE FLUX EQUATIONS HERE
+  VegGrowth <- npp 
+  VegMortality <- VEG * mortalityRate
+  SoilDecomposition <- SOIL * krate
+
+  #WRITE DERIVATIVES HERE
+  dVEG_dt <- VegGrowth - VegMortality
+  dSOIL_dt <- VegMortality - SoilDecomposition
+  
+  #RETURN A LIST OF THE DERIVATIVES
+  return(
+    #RETURN A LIST OF THE DERIVATIVES
+    list(c(dVEG_dt = dVEG_dt, 
+                dSOIL_dt = dSOIL_dt),
+    #AND OTHER CALCULATIONS YOU  WANT TO SAVE
+              c(VegGrowth = VegGrowth, 
+                VegMortality = VegMortality, 
+                SoilDecomposition = SoilDecomposition))
+    )
+}
+```
+
+The important items to note:
+
+1.  The function requires a vector called "times" (a vector or scaler of the time steps modeled), "states" (a vector of your state variables), and "parms" (a vector of your parameters)
+2.  It unpacks the state variables and parameters so that they have readable names that you specify. The state variable vector only represents the last time step, so you DO NOT need to use `t-1` to use the previous time-step value.  This means that `VEG <- states[1]` sets `VEG` equal to the value at the last time-step.
+3.  There is a section where the fluxes are calculated using the state variables and parameters.
+4.  There is a section where the balance equations are applied to calculate the derivatives (`dVeg`, `dSoil`).  Notice how `VegMortality` shows up in both equations because it is an output of one and an input to the other.
+5.  It returns two vectors.  The first vector, `c(dVeg, dSoil)`, is required, and **must** only be the derivatives, and **must** be in the same order as the variables in the `states` vector.  Later, this first vector will multiplied by "dt" to solve the equations.  The second list `c(VegGrowth, VegMortality, SoilDecomposition)` is optional and represents anything other than a state variable that you want to save from the time-step for later analysis.  In this case, the second vector includes the fluxes.
+6.  Order matters.  The order of the state variables must be the same order of the derivatives that you output.  
+
+##Solving the differential equation function using the Euler method
+
+1. Define the parameter vector. The parameter vector should have the following form:
+
+```{r}
+#PARAMETERS
+parms <- c(
+  300,  #npp, g C m-2 yr-1
+  0.02, # mortalityRate, yr-1
+  0.01) # krate, yr-1
+```
+
+I think it's a good idea to include comments that define the units of the parameters so that you explicitly state the model currency (g C), model spatial scale (m2), and model temporal scale (yr).  All state variables and parameters should be on the same currency, spatial and temporal scales.  
+
+2. Define the initial conditions.  The initial conditions are the values of the state variables at the first time-step. 
+
+```{r}
+#INITIAL STATES (THE MODEL STARTING POINT)
+yini <- c(
+  VEG = 1, #Veg, g C m-2
+  SOIL = 1000) #SOIL, g C m-2
+```
+
+Again, the comments with the units are not required but highly encouraged.
+
+3. Define the time length and time step of the simulation
+
+```{r}
+simulation_time <- 400 #YEARS
+dt <- 1  #NUMBER OF YEARS PER TIME STEP
+times <- seq(1, simulation_time, by = dt)
+```
+
+Notice that times is a vector of the time values at each time step  The function `seq` creates a sequence of numbers between `1` and `simulation_time` that are `dt` apart.
+
+4. Initialize the time vector of states
+
+```{r}
+nstates <- 2  #NUMBER OF STOCKS OR STATES IN MODEL
+states <- array(NA, dim = c(length(times), nstates))
+states[1, ] <- yini
+```
+
+The command `states[1,] <- yini` sets the first time-step states array equal to `yini`.
+
+5. Solve the differential equations using the Euler method, also called forward differencing. This is the same method we used in Lab 3.
+
+```{r}
+for(t in 2:length(times)){
+
+  #First, call the differential equation function by passing the current time step, the previous values of the state variables, and the parameters
+  derivatives <- simple_forest_model(t = times[t], 
+                                     states = states[t - 1, ], 
+                                     parms = parms)
+  
+  #Then add the derivatives to the previous values. 
+  states[t, 1] <- states[t - 1, 1] + derivatives[[1]][1] * dt
+  states[t, 2] <- states[t - 1, 2] + derivatives[[1]][2] * dt
+}
+```
+
+The command `derivatives[[1]][1]` says to grab the first value `[1]` from the first list `[[1]]` because the derivatives function can have multiple vectors in the list.  If you wanted to access the value for the flux `VegGrowth` at the time step, you would use `derivatives[[2]][1]`
+
+5. Visualize the results
+
+```{r}
+ylim <- range(c(states[, 1], states[, 2]))
+plot(times, states[, 1], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "carbon stocks (g C m-2)")
+points(times, states[, 2], type = "l", col = "black", lty = "dashed")
+legend("bottomright", c("Vegetation", "Soil"), lty = c("solid", "dashed"), 
+       col = c("black", "black"), bty = "n")
+```
+
+6. If possible, compare to the analytical solution.  This is only possible for the most simple models. You won't use the analytical solution beyond this lab.  You can visualize the analytical solution using the curve function.  Below is a function that describes the analytical solution and the curve function used to visualize.
+
+```{r}
+solved_vegetation_model <- function(x, npp, mortalityRate){
+  #Curve function needs x but your model uses t so set t equal to x
+  t <- x
+  #This is your solution for c by solving for B = 0 at t = 0
+  c <- (1 - (npp / mortalityRate))
+  #This is your analytical solution
+  B <- (npp / mortalityRate) + c * exp(-mortalityRate * t)
+}
+
+curve(solved_vegetation_model(x, npp = 300, mortalityRate = 0.02), 
+      from = 1, to = 400, xlab = "time", ylab = "vegetation biomass",
+      col = "gray", lwd = 10)
+```
+
+You can combine the results from solving the differential equation numerically (i.e., using the Euler method) and analytically.
+
+```{r}
+#This is the numeric solution
+ylim = range(c(states[, 1], states[, 2]))
+plot(times, states[, 1], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "carbon stocks (g C m-2)")
+points(times, states[, 2], type = "l", col="black", lty="dashed")
+legend("bottomright", c("Vegetation", "Soil"), lty = c("solid", "dashed"), 
+       col = c("black", "black"), bty = "n")
+
+#This adds the analytical solution (notice the add = TRUE, that is needed to add the results of the curve function to the existing plot)
+curve(solved_vegetation_model(x, npp = 300, mortalityRate = 0.02), 
+      from = 1,to = 400, ylim = c(0, 50000), xlab = "time", 
+      ylab = "vegetation biomass", col = "gray", lwd = 10, add = TRUE)
+points(times, states[, 1], type = "l", col = "black")
+legend("topleft", legend = c("Analytical Solution", "Euler method"), 
+       col = c("gray", "black"), lty = c(1, 1), bty = "n")
+```
+
+##Code combined together
+
+```{r}
+#HERE IS OUR MODEL
+simple_forest_model <- function(t, states, parms){
+  
+  #"UNPACK" STATES TO THE ACTUAL NAMES
+  VEG <- states[1]
+  SOIL <- states[2]
+
+  #"UNPACK" parms TO THE ACTUAL NAMES
+  npp <- parms[1]
+  mortalityRate <- parms[2]
+  krate <- parms[3]
+
+  #WRITE FLUX EQUATIONS HERE
+  VegGrowth <- npp 
+  VegMortality <- VEG * mortalityRate
+  SoilDecomposition <- SOIL * krate
+
+  #WRITE DERIVATIVES HERE
+  dVEG_dt <- VegGrowth - VegMortality
+  dSOIL_dt <- VegMortality - SoilDecomposition
+
+  #RETURN A LIST OF THE DERIVATIVES
+  return(list(c(dVEG_dt = dVEG_dt,
+                dSOIL_dt = dSOIL_dt), 
+              c(VegGrowth = VegGrowth, 
+                VegMortality = VegMortality, 
+                SoilDecomposition = SoilDecomposition)))
+}
+
+simulation_time <- 400 #YEARS
+dt <- 1  #NUMBER OF YEARS PER TIME STEP
+times <- seq(1, simulation_time, by = dt)
+
+#PARAMETERS
+parms <- c(
+  300,  #g C m-2 yr-1
+  0.02, #yr-1
+  0.01) # yr-1
+
+#INITIAL STATES (THE MODEL STARTING POINT)
+yini <- c(
+  VEG = 1, #g C m-2
+  SOIL = 1000) #g C m-2
+
+nstates <- 2  #NUMBER OF STOCKS OR STATES IN MODEL
+states <- array(NA, dim = c(length(times), nstates))
+states[1, ] <- yini
+
+for(t in 2:length(times)){
+
+  #First call the differential equation function by passing the current time step, the previous values of the state variables, and the parameters
+  derivatives <- simple_forest_model(t = times[t], 
+                                     states = states[t - 1, ], 
+                                     parms = parms)
+  
+  #Then add the derivatives to the previous values. 
+  states[t, 1] <- states[t - 1, 1] + derivatives[[1]][1] * dt
+  states[t, 2] <- states[t - 1, 2] + derivatives[[1]][2]  *dt
+}
+
+ylim <- range(c(states[, 1], states[, 2]))
+plot(times, states[, 1], type = "l", col = "black", lty = "solid", 
+     ylim = ylim, xlab = "time", ylab = "carbon stocks (g C m-2)")
+points(times, states[, 2], type = "l",col = "black", lty = "dashed")
+legend("bottomright", c("Vegetation", "Soil"), 
+       lty = c("solid","dashed"), col = c("black","black"), bty = "n")
+
+#Add the analytical solution
+curve(solved_vegetation_model(x, npp = 300, mortalityRate = 0.02), 
+      from = 1, to = 400, ylim = c(0, 50000), xlab = "time", 
+      ylab = "vegetation biomass", col="gray", lwd = 10, add = TRUE)
+```
+
