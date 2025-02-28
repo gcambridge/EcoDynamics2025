@@ -126,8 +126,8 @@ parms <- c(
   0.4,  #mortalityRate (N m-3 day-1)
   0.1,  #mineralizationRate (N m-3 day-1)
   1.0,  #Chl_Nratio 
-  .0012, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1)
+  .00139, #Turnover rate (m-3 day-1)
+  .0012 # DIN input (N m-3 day-1)
   )    
 ```
 
@@ -159,7 +159,7 @@ output <- ode(y = yini, times = times, func = NPZD_model, parms = parms, method 
 What is the mid-summer stock of phytoplankton after 10 years? Are the dynamics reasonable? Include a plot of the time series from the simulation.  
 
 **Answer 2:** 
-The mid-summer stock of phytoplankton is 2.94 mmolN/m3 following 10 year cycles
+The mid-summer stock of phytoplankton is 3.247 mmolN/m3 following 10 year cycles
 
 ```{r}
 
@@ -174,17 +174,20 @@ output$PHYTO[3832.5]
 
 ```
 
+#Step 6: Apply model
 
+To meet regulations, the lake needs the summer phytoplankton population to not exceed 2 mmol N m^-3 within the next 10 years.
 
 **Question 3:** 
-To meet regulations, the lake needs the summer phytoplankton population to not exceed 2 mmol N m^-3 within the next 10 years.
 
 What is the smallest reduction in agriculture run-off that will achieve this goal? Give your answer as a percentage reduction from the baseline simulation reported in question 2
 
 **Answer 3:**
 
-In order to meet the reduction of phytoplankton concentrations to <2 mmol N m-3 at the end of a ten year period, a reduction of agricultural inputs from 0.0012 to .0005 mmol N m-3 day -1 is needed. This is a percent reduction of 58.33%.
+```{r}
 
+
+```
 
 **Question 4:**
 
@@ -193,37 +196,6 @@ Provide a plot of phytoplankton over the 10-year period with and without the red
 **Answer 4:**
 
 ```{r}
-parms1 <- c(
-  1.0,  #maxUptake (N m-3 day-1)
-  120,  #kspar 
-  0.5,  #ksdin 
-  1.0,  #maxGrazing (N m-3 day-1)
-  1.0,    #ksphyto 
-  0.3,  #pFaeces 
-  0.1,  #excretionRate (N m-3 day-1)
-  0.4,  #mortalityRate (N m-3 day-1)
-  0.1,  #mineralizationRate (N m-3 day-1)
-  1.0,  #Chl_Nratio 
-  .0005, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1) 
-  )
-
-output1 <- ode(y = yini, times = times, func = NPZD_model, parms = parms1, method = "ode45")
-
-output <- as.data.frame(output)
-output1 <- as.data.frame(output1)
-
-par(mfrow = c(1, 2))
-plot(times, output$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-abline(v=3832.5, col="blue", lwd=2, lty=2)
-plot(times, output1$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-abline(v=3832.5, col="blue", lwd=2, lty=2)
-
-legend("topright", legend=c("2 mmolN/m3 standard", "10 Year Target"), 
-       col=c("red", "blue"), lwd=2, lty=2, cex=0.8, box.lty=1)
-
 
 
 ```
@@ -238,110 +210,7 @@ Focus on the following 4 parameters: maxNuptake, maxGrazing, kspar, ksdin
 
 **Answer 5:**
 
-Of the 4 parameters, the parameter that should be most assessed during the field work is the
-uptake/assimilation rate of the phytoplankton community. Not only can this parameter vary with the community composition in the specific lake, but it is the most sensitive parameter in the model.
-
-To verify this, the impacts of changing each factor by the same relative amount were assessed. 
-
-A 50% reduction in max uptake had a 88.70% decrease in the summer phytoplankton concentrations after 10 years. Although the same % change in ksDIN had a higher impact at 98% decrease in summer concentrations, the maximum ability of the present phytoplankton community to uptake available nitrogen is more tuned to the concentration values than simply the presence/absence of nitrogen. This factor can be assessed in the field to reflect the community composition in the study area, and is a more direct control on growth. 
-
-
 ```{r}
-# Highly nitrogen (hksDIN) limited scenario:
-
-hksDIN <- c(
-  1.0,  #maxUptake (N m-3 day-1)
-  120,  #kspar 
-  0.75,  #ksdin 
-  1.0,  #maxGrazing (N m-3 day-1)
-  1.0,    #ksphyto 
-  0.3,  #pFaeces 
-  0.1,  #excretionRate (N m-3 day-1)
-  0.4,  #mortalityRate (N m-3 day-1)
-  0.1,  #mineralizationRate (N m-3 day-1)
-  1.0,  #Chl_Nratio 
-  .0012, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1) 
-  )
-
-# Highly sunlight (hkspar) limited scenario:
-
-hkspar <- c(
-  1.0,  #maxUptake (N m-3 day-1)
-  180,  #kspar 
-  0.5,  #ksdin 
-  1.0,  #maxGrazing (N m-3 day-1)
-  1.0,    #ksphyto 
-  0.3,  #pFaeces 
-  0.1,  #excretionRate (N m-3 day-1)
-  0.4,  #mortalityRate (N m-3 day-1)
-  0.1,  #mineralizationRate (N m-3 day-1)
-  1.0,  #Chl_Nratio 
-  .0012, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1) 
-  )
-
-# lower max uptake (lmu) scenario:
-
-lMU <- c(
-  .5,  #maxUptake (N m-3 day-1)
-  120,  #kspar 
-  0.5,  #ksdin 
-  1.0,  #maxGrazing (N m-3 day-1)
-  1.0,    #ksphyto 
-  0.3,  #pFaeces 
-  0.1,  #excretionRate (N m-3 day-1)
-  0.4,  #mortalityRate (N m-3 day-1)
-  0.1,  #mineralizationRate (N m-3 day-1)
-  1.0,  #Chl_Nratio 
-  .0012, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1) 
-  )
-
-# lower max grazing (lmg) scenario:
-
-hkspar <- c(
-  1.0,  #maxUptake (N m-3 day-1)
-  120,  #kspar 
-  0.5,  #ksdin 
-  .5,  #maxGrazing (N m-3 day-1)
-  1.0,    #ksphyto 
-  0.3,  #pFaeces 
-  0.1,  #excretionRate (N m-3 day-1)
-  0.4,  #mortalityRate (N m-3 day-1)
-  0.1,  #mineralizationRate (N m-3 day-1)
-  1.0,  #Chl_Nratio 
-  .0012, # DIN input (N m-3 day-1)
-  .00139 #Turnover rate "export" (m-3 day-1) 
-  )
-
-output2 <- ode(y = yini, times = times, func = NPZD_model, parms = hksDIN, method = "ode45")
-output3 <- ode(y = yini, times = times, func = NPZD_model, parms = hkspar, method = "ode45")
-output4 <- ode(y = yini, times = times, func = NPZD_model, parms = lMU, method = "ode45")
-output5 <- ode(y = yini, times = times, func = NPZD_model, parms = hkspar, method = "ode45")
-
-output2 <- as.data.frame(output2)
-output3 <- as.data.frame(output3)
-output4 <- as.data.frame(output4)
-output5 <- as.data.frame(output5)
-
-plot(times, output$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton", type = "l")
-plot(times, output2$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton - High N limit", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-
-plot(times, output3$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton - High PAR Limit", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-
-plot(times, output4$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton - Low Max Uptake", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-
-plot(times, output5$PHYTO, xlab="time (days)", ylab ="mmolN/m3", main = "Phytoplankton - Low Grazing", type = "l")
-abline(h=2, col="red", lwd=2, lty=2)
-
-output2$PHYTO[3832.5]/output$PHYTO[3832.5]
-output3$PHYTO[3832.5]/output$PHYTO[3832.5]
-output4$PHYTO[3832.5]/output$PHYTO[3832.5]
-output5$PHYTO[3832.5]/output$PHYTO[3832.5]
 
 
 ```

@@ -130,7 +130,7 @@ simulation_time <- 365 * 2
 dt <- 1
 times <- seq(1, simulation_time, by = dt)
 
-output <- ode(y = yini, times = times, func = NPZD_model, parms = parms, method = "ode45")
+output <- ode(y = yini, times = times, func = NPZD_model, params = parms, method = "ode45")
 ```
 
 ### Visualize output
