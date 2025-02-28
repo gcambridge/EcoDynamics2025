@@ -1,0 +1,118 @@
+---
+title: "Ecosystem Dynamics Lab 6"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Goals:
+
+-	Describe and apply a numerical approach to simulating both space and time using differential equations
+-	Conceptualize how plankton concentrations are sensitive to the light environment  
+-	Apply the concept of light extinction and Beer’s Law to an ecosystem model 
+-	Modify our existing vertical lake model for a new application (ocean carbon burial).  
+
+## Part 1: Space and time models
+
+**Question 1:** 
+
+Provide an example model application when you would potentially need the following dimensions in ecosystem modeling:
+
+**Answer 1:**
+
+a)	0-D
+b)	1-D
+c)	2-D
+d)	3-D
+
+**Question 2:**  
+
+Describe the concept of flux divergence (see text).  
+
+**Answer 2:**
+
+**Question 3:** 
+
+What is the difference between advection and diffusion?
+
+**Answer 3:**
+
+**Question 4:**  
+
+Use the code that we covered in class to simulate the lake phytoplankton population for three years using 3 boxes instead of 48 boxes in the vertical dimension. How is your answer sensitive to the number of boxes that you use?  (think about how the idea of the number of vertical boxes compares to the idea of time steps when solving differential equations)
+
+**Answer 4:**
+
+**Question 5:** 
+
+To control water quality, the amount of sediment coming into the lake has been reduced.  Decreasing the sediment increases the light penetration, which decreases the light extinction coefficient from 0.9 to 0.1.  Using your model, plot and describe how this alters the phytoplankton in the water column.  Describe the reasons for the model behavior. **Be sure to use 48 vertical boxes**
+
+**Answer 5:**
+```{r}
+#INSERT CODE TO SOLVE
+```
+
+## Part 2: Ocean carbon burial
+
+**Question 6:** 
+
+You can use the phytoplankton code as a guide for solving this question.  Importantly, you will be simplifying the existing code. The question follows Question 6.7.3 in S&H.
+
+The biological pump in the ocean is a component of the ocean carbon sink.  The biological pump depends on primary production in the upper ocean sinking and escaping mineralization.  If it is mineralized, then the CO2 returns to the atmosphere, thus not resulting in the net removal of CO2 from the atmosphere.  We are interested in how the rate of dead organic matter sinking influences the vertical distribution of dead organic matter in the ocean.
+
+The ocean has a euphotic zone and an aphotic zone.  The euphotic zone has light and is where photosynthesis occurs (the depth of this zone is not relevant to this problem). The aphotic zone has no light, so only mineralization occurs. It is 400 m thick (i.e., 400 m deep).  
+
+Implement a numerical solution of dead organic matter sinking through the aphotic part of an oceanic water column. Dead organic matter is raining down from the productive euphotic zone.  As it sinks through the water column, it is being degraded through mineralization.  In building your model, assume that:
+
+- The dead organic matter had a constant sinking velocity of (parameter u) of 50 m day-1.  The sinking of the dead organic matter is an advective process.   
+- Model the degradation of dead organic matter as a first-order decay process, with a degradation rate (k) of 0.2 day-1.   
+- The flux of dead organic matter from the euphotic zone, i.e. the upper boundary for our model, is prescribed as 100 mmol C m-2 day-1.  At the lower end of the water column, material leaves the water column to settle on the bottom.   
+- There is no diffusive mixing.   
+- Remember how you can add a second list to the output that is returned by your differential equation model function (see the PAR and CHL example in the NPZD model).  Add the advective flux for the only last layer as an extra output.  This is the carbon burial rate.   
+
+Run the model for a sufficiently long time so that the concentrations of dead organic matter stop changing over time.
+
+Provide the code and solve your model.
+
+**Answer 6:**
+```{r}
+#INSERT CODE TO SOLVE AND PLOT ANSWER
+
+```
+
+**Question 7:**  
+
+Plot the output of your model as a contour plot with time on the x-axis and depth on the y-axis.  The color should be the organic matter concentration. You will use the contour plot code provided in class as the base for the plot.
+
+**Answer 7:**
+```{r}
+#Plot
+```
+
+## Part 3: Sensitivity of burial rates
+
+How is the burial rate sensitive to the sinking rate? Reduce the sinking rate by half (from 50 m/s to 25 m/s) and simulate the burial rate. 
+
+**Question 8:**
+
+ Create a plot that includes the burial rate with a 50 m/s and 25 m/s sinking rate.  Be sure to include a legend and axis labels. As an example of code for placing a legend: `legend("topright", c("50 m/s", "20 m/s"), col = c("black", "red"), lty = c("solid","solid"))`,  Your plot should be a line graph with two lines.
+
+**Answer 8:**
+
+```{r}
+```
+
+**Question 9:** 
+
+How does the burial rate respond to the sinking rate? Explain why it is sensitive (from a process/mechanistic perspective)
+
+**Answer 9:**
+
+**Question 10:** 
+
+"Some models are useful."  How was this modeling assignment useful?
+
+**Answer 10:**

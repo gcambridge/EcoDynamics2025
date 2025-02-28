@@ -1,0 +1,460 @@
+---
+title: "spatial-1d-in-class"
+author: "Quinn Thomas"
+date: "2023-02-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1-D Spatial Model Tutorial
+
+This tutorial guides you through the calculation of the advection, diffusion, and reaction processes necessary to simulate spatio-temporal dynamics in an ecosystem.
+
+The example is for phytoplankton dynamics in a lake that we simulate as having a vertical dimension (depth). Phytoplankton will sink (advection), diffuse, grow (reaction), and die (reaction).
+
+## Diagram of spatial fluxes
+
+The following figure diagrams the concept of 
+
+$$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial (A\cdot{J})}{\partial{x}}$$
+
+where J is the flux density, and A is the area of the box
+
+![](img/divergence_figure.png)
+This generic calculation of a flux divergence can be applied to advection and diffusion.
+
+- advection: directed movement.  
+- diffusion (also called dispersion): random movement that reduces concentration gradients.  
+
+## Example of advection flux calculation
+
+$$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial (u A C)}{\partial{x}}$$
+
+First, define our states at three depths.
+
+```{r}
+PHYTO <- c(10, 0, 10)
+```
+
+Next, define a few parameters.
+
+- `advection_flux_density_top`: the advection flux density (mmolC/m2/day) into the top box
+- `area`: the surface area (m2) of each box (we are assuming constant area for each depth of 100 m2)
+- `u`: our vertical velocity rate (m/day); i.e., how far a mmolC travels in one day
+- `delx`: is the length of the boxes (m)
+
+```{r}
+advection_flux_density_top <- 0
+area <- 100
+u <- 0.2
+delx <- 0.25
+```
+
+
+Now calculate the total flux at each interface between the boxes.  The units of this calculation are m/day * mmolC/m3 * m2 = mmolC / day 
+
+$$ (u\cdot{A}\cdot{C})$$
+
+```{r}
+advection_flux <- u * PHYTO * area
+```
+
+But this does not include the flux into the top of the top box. Since advection only flow in one direction we do not need a flux at the bottom of the bottom box.  Now include the flux into the top box
+
+
+```{r}
+advection_flux_top <- advection_flux_density_top * area
+advection_flux <- c(advection_flux_top, advection_flux)
+```
+
+Does the flux density make sense? 
+
+Do the highest fluxes occur out of the boxes with the largest stocks?
+
+
+```{r}
+advection_flux
+PHYTO
+```
+
+*Check for understanding:* Why are there four values for the `advection_flux` but only three for the PHYTO state?
+
+Now, we want to figure out the net advection flux, also called the flux divergence. This requires looking at the difference between the inputs at the top of a box and the outputs at the bottom. Using the `diff` function, we can easily do this on the entire vector of PHYTO states.
+
+$$ \partial (u\cdot{A}\cdot{C}) $$  
+
+
+```{r}
+diff(advection_flux)
+```
+
+In this example:
+
+- box 1:  200 more mmol/day are leaving the bottom than coming the top.  
+- box 2: 200 more mmol/day are coming in the top and leaving the bottom.   
+- box 3: 200 more mmol/day  are leaving the bottom than coming the top.  
+
+Since a positive value from the diff function means that more is leaving than coming in, we need to multiply the flux density by -1 so that the mass is correctly subtracted from the box.
+
+$$ -\partial (u\cdot{A}\cdot{C})$$
+
+
+```{r}
+advection <- -diff(advection_flux)
+```
+
+
+Finally, intuitively, two boxes have the same net advection fluxes but one box is bigger than another box then the bigger box should have a smaller change in its concentration. Therefore we divide by the length of the box (in our example all boxes have the same length) and the area of the box (which is the same for all boxes in our example and is the middle of the box). The negative is moved to the front. 
+
+$$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial (u\cdot{A}\cdot{C})}{\partial{x}}$$
+
+```{r}
+advection <- -(1/area)*(diff(advection_flux) / delx) 
+```
+
+The resulting units are mmolC / (m3 * day), which is a change in concentration over time (our derviative)
+
+Now we have the change in PHYTO for each box due to advection.  
+
+*Check for understanding:* Which box is gaining the most PHYTO from advection?  Why?
+
+```{r}
+advection
+```
+
+## Example of diffusion flux calculation
+
+$$ \frac{\partial C}{\partial t} = \frac{1}{A}\frac{\partial}{\partial{x}}(A\cdot{D}\cdot\frac{\partial C}{\partial x})$$
+
+
+First, we are going to use the same PHYTO states as used for the advection calculation.
+
+```{r}
+PHYTO
+```
+
+Next, define a few parameters.
+
+- `D`: the diffusion rate parameter (1/day)
+- `area`: the surface area (m2) of each box (we are assuming constant area for each depth)
+- `top_diffusion_gradient`: The diffusion gradient from the top of the top box (mmolC/m)
+- `bottom_diffusion_gradient`: The diffusion gradient from the bottom of the bottom box (mmolC/m)
+- `delx`: is the length of the boxes (m)
+
+```{r}
+D <- 0.01
+area <- 100
+top_diffusion_gradient <- 0.0
+bottom_diffusion_gradient <- 0.0
+delx <- 0.25
+```
+
+Now calculate the gradient in concentration between each box.
+
+$$ \partial C$$
+
+```{r}
+gradient_between_boxes <- diff(PHYTO) 
+```
+
+
+But this does not include the concentration gradient at the top of the top box. Since diffusion can flow up or down we also need to include the gradient at the bottom.  Think of this as diffusion out of the "system" either up or down.  In our example, we are assuming that the gradient is zero at the boundaries of the system so there isn't any loss of mass outside the system due to diffusion (note that we do have a loss of mass out the bottom of the box due to advection)
+
+```{r}
+gradient <- c(top_diffusion_gradient, gradient_between_boxes, bottom_diffusion_gradient)
+```
+
+The gradient depends on the distances between the middle of the boxes.
+
+$$ \frac{\partial C}{\partial x}$$
+
+```{r}
+gradient <- gradient / delx
+```
+
+The units are mmolC / m3 * 1/m = mmolC / m2
+
+Let's compare the gradient to the PHYTOS. 
+
+*Check for understanding:* Why are there four values for the gradient but only three for PHYTO?
+
+```{r}
+gradient
+PHYTO
+```
+
+The flux from diffusion is proportional to the size of the gradient. Importantly, a high gradient means that the box below is higher than the box above, so the mass will flow from the box with more concentration to the box with less concentration. This is against the gradient, so a negative sign is needed so concentration is removed from the box with more concentration.
+
+$$ (A\cdot{-D}\cdot\frac{\partial C}{\partial x})$$
+
+```{r}
+diffusion_flux <- area * -D * gradient
+```
+
+
+The units are m2 * 1/day * (mmolC / m3 * 1/m) = mmolC / day
+
+Now we want to figure out the **net** diffusion flux for each box, also called the **flux divergence**, or how much is the diffusion changing from the top to bottom of the box.
+
+$$ \partial(A\cdot{-D}\cdot\frac{\partial C}{\partial x})$$
+This requires looking at the difference between the inputs at the top of a box and the outputs at the bottom.  This can be easily done on the entire vector of PHYTO states using the `diff` function.  This will automatically subtract box i from i+1.  
+
+```{r}
+diff(diffusion_flux)
+```
+
+In this example:
+
+- box 1: 40 more mmolC/day are leaving than coming in 
+- box 2: 80 more mmolC/day are coming in than leaving  
+- box 3: 40 more mmolC/day are leaving than coming in  
+
+
+It needs to be multipled by -1 because if the diffusion out the bottom is higher than the diffusion in the top then simple subtraction of results a positive number. BUT if diffusion is higher out than it, the net flux should be negative because the box is a net loss of PHYTO.  So we multiply by -1.
+
+```{r}
+-diff(diffusion_flux)
+```
+
+Finally, intuitively, two boxes have the same net diffusion fluxes but one box is bigger than another box then the bigger box should have a smaller change in is concentration. Therefore we divide by the length of the box (in our example all boxes have the same length) and the area.  The negative sign is moved to the front.
+
+$$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial}{\partial{x}}(A\cdot{-D}\cdot\frac{\partial C}{\partial x})$$
+
+```{r}
+diffusion <- - (1 / area) * (diff(diffusion_flux) / delx)
+```
+
+1/m2 * 1/m * m2 * 1/day * (mmolC / m3 * 1/m) = mmolC / (m3 * day)
+
+Now we have the change in PHYTO for each box due to diffusion  
+
+*Check for understanding:* Which box is gaining the most PHYTO from diffusion?  Why?
+
+```{r}
+diffusion
+```
+
+## Reaction
+
+The reactions are the processes occurring within a box.  In our simple model, PHYTOS grow in response to light and die.  
+
+1) The light at the surface is defined using a sin wave where t is the day of the simulation (this is the same function as the NPZD model)
+
+```{r}
+t <- 1
+PAR_surface   <- 0.5 * (540 + 440 * sin(2 * pi * t / 365 - 1.4))
+```
+
+2) The light in each box is defined by the amount of water above it.  We calculate the light in the middle of each box using an exponential decay.  The `light_extinction` parameter is the decay parameter (similar to the k parameter in our decomposition model from Lab 3).  We are assuming our lake is 1 m meters deep and we have boxes that start at 0, 0.25, 0.5  meters deep.  The code `seq(delx/2, lake_depth - (delx/2), by = delx)` calculates the depth of the middle of the boxes.
+
+```{r}
+light_extinction <- 0.9
+lake_depth <- 0.75
+layer_mid_depths <- seq(delx/2, lake_depth - (delx/2), by = delx) 
+layer_PAR <- PAR_surface * exp(-light_extinction * layer_mid_depths)
+```
+
+```{r}
+plot(layer_mid_depths,layer_PAR , type = "l", xlab = "Lake depth (m)", ylab = "PAR")
+```
+
+Carbon uptake is the proportional to the size of the PHYTO stock at each depth (PHYTOS are the worker) with a Michaelis–Menten light limitation multiplier (just like the NPZD model)
+
+```{r}
+maxUptake <- 2
+ksPAR <- 140
+C_Uptake <- maxUptake *  PHYTO * (layer_PAR / (layer_PAR + ksPAR)) 
+C_Uptake
+```
+
+*Check for understanding:* Why is C_Uptake zero in the middle box?  Why is it lower for the bottom box?
+
+PHYTOS die for many different reasons that we represent using a non-linear closure term.
+
+```{r}
+mortalityRate <- 0.05
+Mortality <- mortalityRate * PHYTO^2
+```
+
+Our net reaction is
+
+```{r}
+reaction <- C_Uptake - Mortality
+```
+
+## Combining it together 
+
+Our PHYTO along with the advection, diffusion and reaction rates for each box are:
+
+```{r}
+print("PHYTO")
+PHYTO
+print("Advection")
+advection
+print("Diffusion")
+diffusion
+print("Reaction")
+reaction
+```
+*Check understanding:* Do these values make sense
+
+
+So we can add together to get our differential equation.
+
+```{r}
+dPHYTO_dt <- advection + diffusion + reaction
+dPHYTO_dt
+```
+
+## As a function
+
+```{r}
+phyto_depth_model <- function(t, state, parms){
+  
+  #unpack states
+  #note that PHYTOS is a vector where each cell is a different depth
+  PHYTO <- state
+  
+  #Unpack parameters
+  u <- parms[1]
+  maxUptake <- parms[2]
+  light_extinction <- parms[3]
+  ksPAR <- parms[4]
+  mortalityRate <- parms[5]
+  D <- parms[6]
+  
+  #Boundary conditions
+  phyto_flux_top <- parms[7]
+  top_diffusion_gradient <- parms[8]
+  bottom_diffusion_gradient <- parms[9]
+  
+  #Physical description
+  area <- parms[10]
+  lake_depth <- parms[11]
+  numboxes <- parms[12]
+  
+  #Calculate the thickness of each layer
+  delx <- lake_depth / numboxes
+  
+  #Calculate the environment (note that this depends on time)
+  #This the par at the top of the water column
+  PAR_surface   <- 0.5 * (540 + 440 * sin(2 * pi * t / 365 - 1.4))
+  
+  # Reaction
+  #calculate the depth of the middle of the box
+  layer_mid_depths <- seq(delx, lake_depth, by = delx) 
+  layer_PAR <- PAR_surface * exp(-light_extinction * layer_mid_depths)
+  
+  C_Uptake <- maxUptake *  PHYTO * (layer_PAR / (layer_PAR + ksPAR)) 
+  Mortality <- mortalityRate * PHYTO^2
+  reaction <- C_Uptake - Mortality
+  
+  #Diffusion calculation
+  gradient_middle_boxes <- diff(PHYTO) / delX
+  gradient <- c(top_diffusion_gradient, gradient_middle_boxes, bottom_diffusion_gradient)
+  diffusion_flux <- -area * -D * gradient
+  diffusion <- (1/area) * (diff(diffusion_flux) / delx)
+  
+  # Advection calculation
+  advection_flux <- c(phyto_flux_top, u * PHYTO) * area
+  advection <- -(1/area) * (diff(advection_flux) / delx)
+  
+  # Net change for each box (this a vector)
+  dPHYTO_dt <- advection + diffusion + reaction
+  
+  #This returns the VECTOR of derivatives for each layer box
+  list(c(dPHYTO_dt)) 
+  
+}
+```
+
+## Run function
+
+In this function we are increasing the depth to 12 meters and the mortality rate to 0.5
+
+```{r}
+#Parameters
+#Currency = mmolC/m3
+#Time scale = day
+parms <- c(
+  #Parameters
+  0.2, # vp: meters/day, Phyto sinking rate
+  2, #maxUptake: 1/day, Max Phyto growth rate    #
+  0.9,  #light_extinction: unitless, Light extinction rate
+  140,  #ksPAR units of light, Light half saturation
+  0.5, #mortalityRate: 1/day, mortality of plankton
+  0.01, # D: m2/day, Diffusion rate constant
+  #Boundary conditions
+  0, # phyto_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the upper boundary (Phyto input from outside the lake)
+  0, #top_diffusion_gradient (BOUNDRY CONDITION): mmolC/m, concentraton gradient at top 
+  0, #bottom_diffusion_gradient (BOUNDRY CONDITION): mmolC/m, concentration gradient at bottom
+  #Physical descriptions of the lake
+  1, #horizontal_area: horizontal area of lake m2
+  12, #lake_depth: depth of lake (m)
+  48)  #numboxes: number of boxes simulated
+
+numboxes <- parms[12]
+
+#First set all layers equal to zero
+yini <- rep(0, numboxes)
+
+#Then initialize the layers where the Phytos are starting
+yini[1] <- 3
+
+library(deSolve)
+
+#Use DeSolve to integrate 
+simulation_time <- 2 * 365 #DAYS
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+output <- ode(y = yini, 
+              times = times, 
+              func = phyto_depth_model, 
+              parms = parms)
+```
+
+## Visualize
+
+```{r}
+#Note that the first column in time and the other columns are the different depths that the derivative are calculated
+#Initial conditions
+area <- parms[10]
+lake_depth <- parms[11]
+numboxes <- parms[12]
+delx <- lake_depth / numboxes
+output <- as.data.frame(output)
+
+#Rename the columns to match the depths
+depths <- seq(from = delx / 2, by = delx, length.out = numboxes)  # sequence, 1 m intervals
+names(output) <- c("time", depths)
+
+#Grab the columns that correspond to the different depths
+PHYTO <- output[, 2:(numboxes + 1)]
+
+# temporal-spatial plot of the concentrations
+par(oma = c(0, 0, 3, 0))   # set margin size (oma) so that the title is included
+col <- topo.colors
+
+filled.contour(x = times, 
+               y = depths, 
+               z = as.matrix(PHYTO), 
+               color = col, 
+               ylim = c(lake_depth, 0), 
+               zlim = range(c(PHYTO)),
+               xlab = "time, days", 
+               ylab = "Depth, m", 
+               main = "Concentration, mmolC/m3")
+
+mtext(outer = TRUE, side = 3, "Vertical phytoplankton model", cex = 1.5)
+```
+
+## Examing total phytoplankton
+
+```{r}
+phyto_total <- rowMeans(PHYTO) * lake_depth
+plot(times, phyto_total, type = "l", xlab = "days", ylab = "Total Phytos (mmolC/m2)")
+```
