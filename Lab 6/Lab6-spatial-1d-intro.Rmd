@@ -44,13 +44,13 @@ Next, define a few parameters.
 - `advection_flux_density_top`: the advection flux density (mmolC/m2/day) into the top box
 - `area`: the surface area (m2) of each box (we are assuming constant area for each depth of 100 m2)
 - `u`: our vertical velocity rate (m/day); i.e., how far a mmolC travels in one day
-- `delx`: is the length of the boxes (m)
+- `delX`: is the length of the boxes (m)
 
 ```{r}
 advection_flux_density_top <- 0
 area <- 100
 u <- 0.2
-delx <- 0.25
+delX <- 0.25
 ```
 
 
@@ -112,7 +112,7 @@ Finally, intuitively, two boxes have the same net advection fluxes but one box i
 $$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial (u\cdot{A}\cdot{C})}{\partial{x}}$$
 
 ```{r}
-advection <- -(1/area)*(diff(advection_flux) / delx) 
+advection <- -(1/area)*(diff(advection_flux) / delX) 
 ```
 
 The resulting units are mmolC / (m3 * day), which is a change in concentration over time (our derviative)
@@ -142,14 +142,14 @@ Next, define a few parameters.
 - `area`: the surface area (m2) of each box (we are assuming constant area for each depth)
 - `top_diffusion_gradient`: The diffusion gradient from the top of the top box (mmolC/m)
 - `bottom_diffusion_gradient`: The diffusion gradient from the bottom of the bottom box (mmolC/m)
-- `delx`: is the length of the boxes (m)
+- `delX`: is the length of the boxes (m)
 
 ```{r}
 D <- 0.01
 area <- 100
 top_diffusion_gradient <- 0.0
 bottom_diffusion_gradient <- 0.0
-delx <- 0.25
+delX <- 0.25
 ```
 
 Now calculate the gradient in concentration between each box.
@@ -172,7 +172,7 @@ The gradient depends on the distances between the middle of the boxes.
 $$ \frac{\partial C}{\partial x}$$
 
 ```{r}
-gradient <- gradient / delx
+gradient <- gradient / delX
 ```
 
 The units are mmolC / m3 * 1/m = mmolC / m2
@@ -224,7 +224,7 @@ Finally, intuitively, two boxes have the same net diffusion fluxes but one box i
 $$ \frac{\partial C}{\partial t} = -\frac{1}{A}\frac{\partial}{\partial{x}}(A\cdot{-D}\cdot\frac{\partial C}{\partial x})$$
 
 ```{r}
-diffusion <- - (1 / area) * (diff(diffusion_flux) / delx)
+diffusion <- - (1 / area) * (diff(diffusion_flux) / delX)
 ```
 
 1/m2 * 1/m * m2 * 1/day * (mmolC / m3 * 1/m) = mmolC / (m3 * day)
@@ -248,12 +248,12 @@ t <- 1
 PAR_surface   <- 0.5 * (540 + 440 * sin(2 * pi * t / 365 - 1.4))
 ```
 
-2) The light in each box is defined by the amount of water above it.  We calculate the light in the middle of each box using an exponential decay.  The `light_extinction` parameter is the decay parameter (similar to the k parameter in our decomposition model from Lab 3).  We are assuming our lake is 1 m meters deep and we have boxes that start at 0, 0.25, 0.5  meters deep.  The code `seq(delx/2, lake_depth - (delx/2), by = delx)` calculates the depth of the middle of the boxes.
+2) The light in each box is defined by the amount of water above it.  We calculate the light in the middle of each box using an exponential decay.  The `light_extinction` parameter is the decay parameter (similar to the k parameter in our decomposition model from Lab 3).  We are assuming our lake is 1 m meters deep and we have boxes that start at 0, 0.25, 0.5  meters deep.  The code `seq(delX/2, lake_depth - (delX/2), by = delX)` calculates the depth of the middle of the boxes.
 
 ```{r}
 light_extinction <- 0.9
 lake_depth <- 0.75
-layer_mid_depths <- seq(delx/2, lake_depth - (delx/2), by = delx) 
+layer_mid_depths <- seq(delX/2, lake_depth - (delX/2), by = delX) 
 layer_PAR <- PAR_surface * exp(-light_extinction * layer_mid_depths)
 ```
 
@@ -337,7 +337,7 @@ phyto_depth_model <- function(t, state, parms){
   numboxes <- parms[12]
   
   #Calculate the thickness of each layer
-  delx <- lake_depth / numboxes
+  delX <- lake_depth / numboxes
   
   #Calculate the environment (note that this depends on time)
   #This the par at the top of the water column
@@ -345,7 +345,7 @@ phyto_depth_model <- function(t, state, parms){
   
   # Reaction
   #calculate the depth of the middle of the box
-  layer_mid_depths <- seq(delx, lake_depth, by = delx) 
+  layer_mid_depths <- seq(delX, lake_depth, by = delX) 
   layer_PAR <- PAR_surface * exp(-light_extinction * layer_mid_depths)
   
   C_Uptake <- maxUptake *  PHYTO * (layer_PAR / (layer_PAR + ksPAR)) 
@@ -356,11 +356,11 @@ phyto_depth_model <- function(t, state, parms){
   gradient_middle_boxes <- diff(PHYTO) / delX
   gradient <- c(top_diffusion_gradient, gradient_middle_boxes, bottom_diffusion_gradient)
   diffusion_flux <- -area * -D * gradient
-  diffusion <- (1/area) * (diff(diffusion_flux) / delx)
+  diffusion <- (1/area) * (diff(diffusion_flux) / delX)
   
   # Advection calculation
   advection_flux <- c(phyto_flux_top, u * PHYTO) * area
-  advection <- -(1/area) * (diff(advection_flux) / delx)
+  advection <- -(1/area) * (diff(advection_flux) / delX)
   
   # Net change for each box (this a vector)
   dPHYTO_dt <- advection + diffusion + reaction
@@ -383,7 +383,7 @@ parms <- c(
   #Parameters
   0.2, # vp: meters/day, Phyto sinking rate
   2, #maxUptake: 1/day, Max Phyto growth rate    #
-  0.9,  #light_extinction: unitless, Light extinction rate
+  0.1,  #light_extinction: unitless, Light extinction rate
   140,  #ksPAR units of light, Light half saturation
   0.5, #mortalityRate: 1/day, mortality of plankton
   0.01, # D: m2/day, Diffusion rate constant
@@ -407,7 +407,7 @@ yini[1] <- 3
 library(deSolve)
 
 #Use DeSolve to integrate 
-simulation_time <- 2 * 365 #DAYS
+simulation_time <- 3 * 365 #DAYS
 dt <- 1
 times <- seq(1, simulation_time, by = dt)
 
@@ -425,11 +425,11 @@ output <- ode(y = yini,
 area <- parms[10]
 lake_depth <- parms[11]
 numboxes <- parms[12]
-delx <- lake_depth / numboxes
+delX <- lake_depth / numboxes
 output <- as.data.frame(output)
 
 #Rename the columns to match the depths
-depths <- seq(from = delx / 2, by = delx, length.out = numboxes)  # sequence, 1 m intervals
+depths <- seq(from = delX / 2, by = delX, length.out = numboxes)  # sequence, 1 m intervals
 names(output) <- c("time", depths)
 
 #Grab the columns that correspond to the different depths

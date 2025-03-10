@@ -23,10 +23,14 @@ Provide an example model application when you would potentially need the followi
 
 **Answer 1:**
 
-a)	0-D
-b)	1-D
-c)	2-D
-d)	3-D
+a)	0-D:  A zero dimensional model is one that only operates in time, like a population model such as the NPZD model from lab 5.
+
+b)	1-D:  A 1-D model operates in one spatial dimension, such as a population model operating over a lake depth profile.
+
+c)	2-D:  A 2-D model operates over two spatial dimensions, such as a 
+population model with depth profile and longitudinal profile of a stream
+
+d)	3-D: A 3-D model operates of three dimensions, such as population model over Depth, longitudinal, and lateral profiles.
 
 **Question 2:**  
 
@@ -34,11 +38,22 @@ Describe the concept of flux divergence (see text).
 
 **Answer 2:**
 
+The concept of flux divergence accounts for the changes in fluxes with position within a constrained volume. 
+
 **Question 3:** 
 
 What is the difference between advection and diffusion?
 
 **Answer 3:**
+Advection is a process which characterizes the motion of particles by a velocity, which often is a result of an acitve external influence. this force is assumed to largely be applied to all particles within a specified volume, resulting in uniform velocity responses according to particle mass.
+
+Advection Flux = Velocity * Concentration
+
+Dispersive/Diffusive fluxes are reflective of largely random motion of particles that are more passively spreading through a volume. This can be impacted by concentration gradients and equilibrium, with the former resulting in fluxes while the later does not.
+
+Dispersion Flux = dispersion coefficent (D, Length^2 s-1) * concentration gradient.
+
+Dispersion coefficent units reflect how fast the exchange is or how mobile the particle is.
 
 **Question 4:**  
 
@@ -46,14 +61,43 @@ Use the code that we covered in class to simulate the lake phytoplankton populat
 
 **Answer 4:**
 
+The number of boxes we use in the simulation relates to the resolution of the plots and identification of peaks in the total population counts. The larger bins mean an inclusion of more spread in each bin, and so the average of these larger bins are erasing the fine detail that is seen when the bin numbers are increased.
+
+Spatial distribution with 3 bins
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00001e.png)
+
+Spatial distribution with 48 bins
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
+
+Population with 3 bins
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000014.png)
+
+Population with 48 bins
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000012.png)
+
+
+
 **Question 5:** 
 
 To control water quality, the amount of sediment coming into the lake has been reduced.  Decreasing the sediment increases the light penetration, which decreases the light extinction coefficient from 0.9 to 0.1.  Using your model, plot and describe how this alters the phytoplankton in the water column.  Describe the reasons for the model behavior. **Be sure to use 48 vertical boxes**
 
 **Answer 5:**
-```{r}
-#INSERT CODE TO SOLVE
-```
+
+Decreasing the sediment and obstruction of light to deeper parts of the lake means that the phytoplankton concentrations at deeper depths increases. It also means that there is a more pronounced change in concentrations across the seasons, especially at mid depths. In the shoulder seasons, the concentrations at mid depth (4-8 m) see changes from high to low concentrations that were not seen in early models with lower light levels at these depths.
+
+With a light extinction coefficient of 0.9
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
+
+With a light extinction coefficient of 0.1
+
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00002e.png)
+
+There is a change in the population totals in terms of magnitude, with summer peaks going from ~7 to ~30, but little variation in seasonality is seen here as peaks still occur during the summer.
 
 ## Part 2: Ocean carbon burial
 

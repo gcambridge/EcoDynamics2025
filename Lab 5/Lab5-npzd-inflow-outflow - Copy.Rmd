@@ -126,8 +126,8 @@ parms <- c(
   0.4,  #mortalityRate (N m-3 day-1)
   0.1,  #mineralizationRate (N m-3 day-1)
   1.0,  #Chl_Nratio 
-  .00139, #Turnover rate (m-3 day-1)
-  .0012 # DIN input (N m-3 day-1)
+  .0005, # DIN input (N m-3 day-1)
+  .00139 #Turnover rate "export" (m-3 day-1) 
   )    
 ```
 

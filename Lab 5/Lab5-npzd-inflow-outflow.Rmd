@@ -228,8 +228,6 @@ legend("topright", legend=c("2 mmolN/m3 standard", "10 Year Target"),
 
 ```
 
-#Step 7: Improve the model
-
 **Question 5:**  
 
 You are an ecosystem scientist tasked with improving the model by better parameterizing the model that it models phytoplankton more realistically.  To address this task, you are designing a field-sampling program to measure the model's parameters.  Which parameter should get the most attention in the field program and why?  Provide a quantitative assessment, including a description of the approach you used to make the assessment.
