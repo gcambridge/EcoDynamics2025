@@ -65,19 +65,19 @@ The number of boxes we use in the simulation relates to the resolution of the pl
 
 Spatial distribution with 3 bins
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00001e.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\00001e.PNG)
 
 Spatial distribution with 48 bins
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000022.PNG)
 
 Population with 3 bins
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000014.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000014.PNG)
 
 Population with 48 bins
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000012.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000012.PNG)
 
 
 
@@ -91,11 +91,11 @@ Decreasing the sediment and obstruction of light to deeper parts of the lake mea
 
 With a light extinction coefficient of 0.9
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
 
 With a light extinction coefficient of 0.1
 
-![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00002e.png)
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\00002e.png)
 
 There is a change in the population totals in terms of magnitude, with summer peaks going from ~7 to ~30, but little variation in seasonality is seen here as peaks still occur during the summer.
 
@@ -123,8 +123,73 @@ Provide the code and solve your model.
 
 **Answer 6:**
 ```{r}
-#INSERT CODE TO SOLVE AND PLOT ANSWER
+phyto_depth_model <- function(t, state, parms){
+  
+  #unpack states
+  #note that PHYTOS is a vector where each cell is a different depth
+  DEADOM <- state
+  
+  #Unpack parameters
+  u <- parms[1]
+  k <- parms[2]
 
+  #Boundary conditions
+  DeadOM_flux_top <- parms[3]
+  
+  #Physical description
+  depth <- parms[4]
+  numboxes <- parms[5]
+  
+  delx <- depth/numboxes
+
+  # Advection calculation
+  advection <- -u * (diff(DeadOM_flux_top)/delx)
+  
+  
+  # Decay calculation
+  decay <- -k * DEADOM
+  
+  # Net change for each box (this a vector)
+  dDEADOM_dt <- advection + decay
+  
+  #This returns the VECTOR of derivatives for each layer box
+  list(c(dDEADOM_dt)) 
+  
+  #Parameters
+#Currency = mmolC/m3
+#Time scale = day
+parms <- c(
+  #Parameters
+  50, # u: meters/day, Dead OM sinking rate
+  .2, # k: day-1, degradation of Dead OM
+  
+  #Boundary conditions
+  100, # DeadOM_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the      upper boundary (Dead OM input from outside the aphotic zone)
+
+  #Physical descriptions of the Aphotic Zone
+  400, #Azone_depth: depth of Aphotic zone (m)
+  60, #num of boxes.
+  )
+  
+#First set all layers equal to zero
+yini <- rep(0, numboxes)
+
+#Then initialize the layers where the Phytos are starting
+yini[1] <- 0
+
+library(deSolve)
+
+#Use DeSolve to integrate 
+simulation_time <- 3 * 365 #DAYS
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+output <- ode(y = yini, 
+              times = times, 
+              func = phyto_depth_model, 
+              parms = parms)
+  
+}
 ```
 
 **Question 7:**  
