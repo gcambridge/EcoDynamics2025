@@ -65,19 +65,19 @@ The number of boxes we use in the simulation relates to the resolution of the pl
 
 Spatial distribution with 3 bins
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\00001e.PNG)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00001e.PNG)
 
 Spatial distribution with 48 bins
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000022.PNG)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.PNG)
 
 Population with 3 bins
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000014.PNG)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000014.PNG)
 
 Population with 48 bins
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000012.PNG)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000012.PNG)
 
 
 
@@ -91,11 +91,11 @@ Decreasing the sediment and obstruction of light to deeper parts of the lake mea
 
 With a light extinction coefficient of 0.9
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\000022.png)
 
 With a light extinction coefficient of 0.1
 
-![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 6\00002e.png)
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 6\00002e.png)
 
 There is a change in the population totals in terms of magnitude, with summer peaks going from ~7 to ~30, but little variation in seasonality is seen here as peaks still occur during the summer.
 
@@ -123,7 +123,7 @@ Provide the code and solve your model.
 
 **Answer 6:**
 ```{r}
-phyto_depth_model <- function(t, state, parms){
+deadOM_depth_model <- function(t, state, parms){
   
   #unpack states
   #note that PHYTOS is a vector where each cell is a different depth
@@ -139,12 +139,16 @@ phyto_depth_model <- function(t, state, parms){
   #Physical description
   depth <- parms[4]
   numboxes <- parms[5]
+  area <- parms[6]
   
   delx <- depth/numboxes
 
   # Advection calculation
   advection <- -u * (diff(DeadOM_flux_top)/delx)
   
+  advection_flux <- c(DeadOM_flux_top, u * DEADOM) * area
+  advection <- -(1/area) * (diff(advection_flux)/delx)
+
   
   # Decay calculation
   decay <- -k * DEADOM
@@ -152,9 +156,11 @@ phyto_depth_model <- function(t, state, parms){
   # Net change for each box (this a vector)
   dDEADOM_dt <- advection + decay
   
-  #This returns the VECTOR of derivatives for each layer box
-  list(c(dDEADOM_dt)) 
-  
+  burial_rate <- advection_flux[length(advection_flux)]
+
+  return(list(dDEADOM_dt, burial_rate = burial_rate))
+
+} 
   #Parameters
 #Currency = mmolC/m3
 #Time scale = day
@@ -164,32 +170,31 @@ parms <- c(
   .2, # k: day-1, degradation of Dead OM
   
   #Boundary conditions
-  100, # DeadOM_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the      upper boundary (Dead OM input from outside the aphotic zone)
+  100, # DeadOM_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the upper boundary (Dead OM input from outside the aphotic zone)
 
   #Physical descriptions of the Aphotic Zone
   400, #Azone_depth: depth of Aphotic zone (m)
   60, #num of boxes.
-  )
-  
+  1) #area m2
+
+numboxes <- parms[5]
 #First set all layers equal to zero
 yini <- rep(0, numboxes)
 
-#Then initialize the layers where the Phytos are starting
+#Then initialize the layers where the OM is starting
 yini[1] <- 0
 
 library(deSolve)
 
 #Use DeSolve to integrate 
-simulation_time <- 3 * 365 #DAYS
+simulation_time <- .05 * 365 #DAYS
 dt <- 1
 times <- seq(1, simulation_time, by = dt)
 
 output <- ode(y = yini, 
               times = times, 
-              func = phyto_depth_model, 
+              func = deadOM_depth_model, 
               parms = parms)
-  
-}
 ```
 
 **Question 7:**  
@@ -198,7 +203,26 @@ Plot the output of your model as a contour plot with time on the x-axis and dept
 
 **Answer 7:**
 ```{r}
-#Plot
+Azone_depth <- parms[4]
+numBoxes <- parms[5]
+delx <- Azone_depth/numBoxes
+output <- as.data.frame(output)
+
+depths <- seq(from = delx/2, by = delx, length.out = numboxes)
+names(output) <- c("time", depths)
+
+DeadOM <- output[,2 :(numboxes + 1)]
+
+par(oma = c(0,0,3,0))
+
+col <- topo.colors
+
+filled.contour(x = times, y = depths, z = as.matrix(DeadOM), color = col, 
+              ylim = c( Azone_depth,0), zlim  = range(c(DeadOM)), xlab = "time, days", ylab = "Depth m", main = "Concentration , mmol C /m^3"
+)
+
+mtext(outer = TRUE , side = 3, " Vertical Dead Organic Matter model", cex = 1.5)
+         
 ```
 
 ## Part 3: Sensitivity of burial rates
@@ -212,16 +236,139 @@ How is the burial rate sensitive to the sinking rate? Reduce the sinking rate by
 **Answer 8:**
 
 ```{r}
+deadOM_depth_model <- function(t, state, parms){
+  
+  #unpack states
+  #note that PHYTOS is a vector where each cell is a different depth
+  DEADOM <- state
+  
+  #Unpack parameters
+  u <- parms[1]
+  k <- parms[2]
+
+  #Boundary conditions
+  DeadOM_flux_top <- parms[3]
+  
+  #Physical description
+  depth <- parms[4]
+  numboxes <- parms[5]
+  area <- parms[6]
+  
+  delx <- depth/numboxes
+
+  # Advection calculation
+  advection <- -u * (diff(DeadOM_flux_top)/delx)
+  
+  advection_flux <- c(DeadOM_flux_top, u * DEADOM) * area
+  advection <- -(1/area) * (diff(advection_flux)/delx)
+
+  
+  # Decay calculation
+  decay <- -k * DEADOM
+  
+  # Net change for each box (this a vector)
+  dDEADOM_dt <- advection + decay
+  
+  burial_rate <- advection_flux[length(advection_flux)]
+
+  return(list(dDEADOM_dt, burial_rate = burial_rate))
+  
+} 
+  #Parameters
+#Currency = mmolC/m3
+#Time scale = day
+parms <- c(
+  #Parameters
+  50, # u: meters/day, Dead OM sinking rate
+  .2, # k: day-1, degradation of Dead OM
+  
+  #Boundary conditions
+  100, # DeadOM_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the upper boundary (Dead OM input from outside the aphotic zone)
+
+  #Physical descriptions of the Aphotic Zone
+  400, #Azone_depth: depth of Aphotic zone (m)
+  60, #num of boxes.
+  1) #area m2
+
+numboxes <- parms[5]
+#First set all layers equal to zero
+yini <- rep(0, numboxes)
+
+#Then initialize the layers where the OM is starting
+yini[1] <- 0
+
+library(deSolve)
+
+#Use DeSolve to integrate 
+simulation_time <- .1 * 365 #DAYS
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+output <- ode(y = yini, 
+              times = times, 
+              func = deadOM_depth_model, 
+              parms = parms)
+
+
+output <- as.data.frame(output)
+
+parms <- c(
+  #Parameters
+  25, # u: meters/day, Dead OM sinking rate
+  .2, # k: day-1, degradation of Dead OM
+  
+  #Boundary conditions
+  100, # DeadOM_flux_top (BOUNDRY CONDITION): mmolC/m2/d  flux at the upper boundary (Dead OM input from outside the aphotic zone)
+
+  #Physical descriptions of the Aphotic Zone
+  400, #Azone_depth: depth of Aphotic zone (m)
+  60, #num of boxes.
+  1) #area m2
+
+numboxes <- parms[5]
+#First set all layers equal to zero
+yini <- rep(0, numboxes)
+
+#Then initialize the layers where the OM is starting
+yini[1] <- 0
+
+library(deSolve)
+
+#Use DeSolve to integrate 
+simulation_time <- .1 * 365 #DAYS
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+output1 <- ode(y = yini, 
+              times = times, 
+              func = deadOM_depth_model, 
+              parms = parms)
+
+
+output1 <- as.data.frame(output1)
+
+
+plot(times, output$burial_rate, xlab = "time (days)", ylab = "burial rate", main = "C Burial Rate", type = "l")
+points(times, output1$burial_rate, , type= "l", col = "red")
+
+legend("topright", c("Sinking Rate = 50 m/day", "Sinking Rate = 25 m/day"), lty = c("solid"),
+       col = c("black", "red"), bty = "n")
+
 ```
 
 **Question 9:** 
 
 How does the burial rate respond to the sinking rate? Explain why it is sensitive (from a process/mechanistic perspective)
 
+
 **Answer 9:**
+
+The faster that dead OM can pass through the aphotic zone, the less time there is for mineralization to occur. As such, reducing the rate the dead OM sinks means it is the aphotic zone for longer, experiencing longer decay, leading to lower rates of accumulation of the fallen organic matter that passed through the zone without decaying.
 
 **Question 10:** 
 
 "Some models are useful."  How was this modeling assignment useful?
 
 **Answer 10:**
+This assignment made me consider the lose usage of carbon storage and rate terminology I have been using/exposed to early in my academic career. Building from the earlier content discussing productivity and other terms, this exercise helps me to better understand terms relevant to fate, such as accretion and burial.
+It also offers an example of the mechanisms relevant to these processes. 
