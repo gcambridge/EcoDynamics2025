@@ -57,7 +57,7 @@ The model states are the Soil Organic Carbon (SOC), Dissolved Organic Carbon (DO
 What are the model fluxes?
 
 **Answer 5:**
-Enzyme Catalysis, Uptake, Carbon Use Efficiency, Enzyme Production and Decay, production, Death, Inputs, and CO2 are all fluxes/flows described in the model.
+Enzyme Catalysis, Uptake, Carbon Use Efficiency, Enzyme Production and Decay, Death, and Inputs are all fluxes/flows described in the model.
 
 **Question 6:**
 
@@ -93,8 +93,13 @@ Draw a conceptual diagram of the Enzyme-driven model and label the fluxes with a
 
 **Answer 9:**
 
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 7\diagram.JPG)
+
 **Question 10:**
 
 Write the differential equations for the Enzyme-driven model states using the flux numbers from question 9. 
 
 **Answer 10:**
+
+![](C:\Users\gavri\Documents\GitHub\EcoDynamics2025\Lab 7\eqs.JPG)
+

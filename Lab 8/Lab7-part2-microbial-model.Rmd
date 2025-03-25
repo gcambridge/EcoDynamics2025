@@ -1,0 +1,99 @@
+---
+title: "Ecosystem Dynamics Lab 8"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Goals: 
+
+-	Construct a model from peer-reviewed literature
+-	Learn how to design a modeling study
+-	Use R to solve differential equations
+-	Create clean graphs to communicate model experiments
+-	Explore an alternative decomposition model to the classic first-order decay model
+- Build independence in your modeling abilities
+
+# Step 1: Build model
+
+Construct the enzyme model described by Allison et al. (2010).  Use the modeling framework developed in class to build the differential equation model. 
+
+# Step 2: Parameterize model
+
+Design the model experiments by setting up the different parameter sets required to run the experiments shown in column (a) of Figure 2
+
+- control (no warming).  
+- warm + const CUE. 
+- warm + vary CUE. 
+- warm + acclim CUE. 
+
+Remember that you will need to do a spin-up simulation to determine the initial conditions (`yini`).  The same initial conditions will be used for each of the four model experiments above.  
+
+One of the challenges of the assignment is figuring out how the authors carried out their model experiments.
+
+# Step 3: Run model
+
+Run the simulations necessary to reproduce the results in column a of Figure 2 in Allison et al. (2010)  Use deSolve to solve your model.
+
+Tips for solving the model
+
+- In the ode function, change `method = ode23` to `method = lsoda`
+- Use the the following code to get the state values at the last time step from the spin-up simulation,  Use these values as the `yini` for the experiments
+
+```{r eval=FALSE}
+tail(out,1) #where 'out' is the output of the ODE solver
+```
+
+- Include 'CO2' as one of the extra outputs in the differential equation function because it is not a model state, but you want to plot it.  Please take a look at the CHL example in the NPZD lab.
+- Include temperature as a parameter (though I like to think of it as a driver or forcing)
+- In the spin-up, use a simulation time of 100 years (in hours) and a dt of 24 hrs (one day)
+- In the experiments, use a simulation time of 30 years (in hours) and a dt of 24 hrs (one day)
+
+# Step 4: Communicate the results.  
+
+## Methods section
+
+Create a new Rmarkdown document with the following sections.
+ 
+- Conceptual model diagram (you should have this from Lab 7)
+- Code is used to simulate the differential equation model as a function.  This is your differential equation function
+- Description of the model experiment.
+
+## Result section
+
+Describe results with text and figures.
+
+Since you are using the Rmarkdown, your analysis code will be in the results section.  In your code, specify the parameters (`parms` vector) and the initial conditions (`yini` vector). Run the ODE solver for each of the four simulations.  Then save the output for each simulation as a unique name that you can use to build your graphs. 
+
+I expect the figure to be multi-panel (with different panels for the different variables and multiple lines for each experiment on each panel), with the five graphs in column (a) of Figure 2 in Allison et al. (2010).  
+
+Here is an example of a multi-panel figure in base R plotting.  You can also use ggplot if you are more comfortable with that plotting coding.
+
+```{r}
+attach(mtcars)  #Just an example of data in R
+par(mfrow=c(2,3)) #First number is the number of rows, and the second number is the number of columns in the plot
+#Plot like normal
+plot(wt,mpg, main="Scatterplot of wt vs. mpg")
+plot(wt,disp, main="Scatterplot of wt vs disp")
+hist(wt, main="Histogram of wt")
+boxplot(wt, main="Boxplot of wt")
+```
+
+## Discussion section
+
+- What did you learn about how microbial dynamics may influence the response of decomposition and soil carbon storage to climate change?  
+- Why does the finding from the paper matter?  
+- Caveats and key areas of uncertainty in the model. 
+- What is the next question that you would like to potentially explore with the model  (or a modified version of the model) and why?   This answer can’t be the same as what is discussed in Allison et al. (2010).
+
+## References
+
+Include any references that you used.  You must include a reference to the Allison et al. (2010) paper.  Use the citation formatting of Ecology.  
+
+**Submit your knitted Rmarkdown that includes your code, figures, and text**
+
+
+
