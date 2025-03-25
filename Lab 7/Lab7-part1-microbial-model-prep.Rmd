@@ -28,6 +28,7 @@ In preparation for model building, please answer the following questions (Due by
 What is the model currency?
 
 **Answer 1:**
+Carbon in its different forms in pools and fluxes, represented in units of density, exchange rates, and per area.
 
 **Question 2:** 
 
@@ -35,23 +36,28 @@ What is the model time scale?
 
 **Answer 2:**
 
+The time scale is 30 years at an annual interval.
+
 **Question 3:**  
 
 What is the model spatial scale?
 
 **Answer 3:**
 
+The mechanisms described in the model are occurring at a microbial and molecular scale, but the implications of the fluxes defined are global.
+
 **Question 4:**
 
 What are the model states?
 
 **Answer 4:**
-
+The model states are the Soil Organic Carbon (SOC), Dissolved Organic Carbon (DOC), Microbial Biomass (MIC), and Extracellular Enzymes (ENZ). 
 **Question 5:**
 
 What are the model fluxes?
 
 **Answer 5:**
+Enzyme Catalysis, Uptake, Carbon Use Efficiency, Enzyme Production and Decay, production, Death, Inputs, and CO2 are all fluxes/flows described in the model.
 
 **Question 6:**
 
@@ -59,17 +65,27 @@ What are the forcing inputs (environmental drivers) to the model?
 
 **Answer 6:**
 
+The main forcing inputs in the model are temperature and its effects on Enzyme Catalysis, Uptake, and CUE. The modeled forcing input was an increase in 5C, from 20 to 25C.
+
 **Question 7:**
 
 What initial conditions does the model require?
 
 **Answer 7:**
+Initial model conditions are described as spin-up parameters, such as pool sizes for SOC, DOC, MIC, and extra cellular enzymes.
 
 **Question 8:** 
 
 What are the model parameters?
 
 **Answer 8:**
+Inputs of SOC and DOC.
+Rates of cell death, enzyme production, and enzyme loss.
+Conversion of MIC to SOC.
+Carbon Use Efficiency and it's rate of change.
+The maximum velocity of decomposition and uptake.
+Pre-exponential coefficents and their rate of change for decomposition and uptake reactions.
+Activation Energy for decomposition and uptake reactions
 
 **Question 9:**
 
