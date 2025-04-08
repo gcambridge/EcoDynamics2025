@@ -1,0 +1,128 @@
+---
+title: "Lab 7 part 2"
+author: "Gavriel Cambridge"
+date: "2025-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Generate Function
+```{r}
+enzyme_catalysis_model <- function(t, state, params){
+  #unpack states
+  SOC <- state[1]
+  DOC <- state[2]
+  ENZ <- state[3]
+  MIC <- state[4]
+  
+  #unpack parameters
+    # Parameters relevant to dSOC/dt:
+    SOCin <- params[1] # input of SOC
+    rDeath <- params[2] # rate of Death
+    MIC2SOC <- params[3] #Proportion death of MIC to SOC
+    Ea_decomp <- params[4] #Velocity of decomposition
+    Km_slope_decomp <- params[5] 
+    temp <- params[6]
+    Km0_decomp <- params[7]
+    
+    # Parameters relevant to dMIC/dt:
+    Ea_uptake <- params[8]
+    Km_slope_uptake <- params[9]
+    Km0_uptake <- params[10]
+    #rDeath pre defined
+    r_EnzProd <- params[11]
+    
+    #Parameters relevant to dDOC/dt:
+    DOCin <- params[12]
+    #rDeath, MICtoSOC, Decomp predefined
+    r_EnzLoss <- params[13]
+    
+    
+    #CUE parameters:
+    CUE_slope <- params[14]
+    CUE0 <- params[15]
+    Vmax_uptake0 <- params[16]
+    Vmax_decomp0 <- params[17]
+    gasConst <- params[18]
+    
+    
+  #Calculate intermediate parameters:
+    Km_decomp <- Km_slope_decomp * temp + Km0_decomp
+    Km_uptake <- Km_slope_uptake * temp + Km0_uptake
+    CUE <- CUE_slope * temp + CUE0
+    Death <- rDeath * MIC
+    Assim <- Vmax_uptake * MIC * (DOC/(Km_uptake + DOC))
+    EProd <- r_EnzProd * MIC
+    Decomp <- Vmax_decomp * ENZ * (SOC/(Km + SOC))
+    ELoss <- r_EnzLoss * ENZ
+   
+     Vmax_decomp
+    Vmax_uptake <- Vmax_uptake0 * 
+    
+  #Diffeqs:
+  dMIC <- Assim * CUE - Death - EProd
+  
+  dSOC <- SOCin + (Death*MIC2SOC) - Decomp
+  
+  dDOC <- DOCin + Death(1-MIC2SOC) + Decomp + ELoss - Assim
+  
+  dENZ <- EProd - ELoss
+  
+  
+  return(list(c(dMIC = dMIC, 
+                dSOC = dSOC,
+                dDOC = dDOC,
+                dENZ = dENZ)))
+}
+
+
+```
+
+###Parameters
+```{r}
+  params <- c(
+    .0005, #Initial SOC
+    .0002, #Rate of Death
+    .5, #MIC2SOC
+    47, #Ea-decomp
+    5, #Km Slope decomp
+    20, #temp
+    500, #Km0
+    47, #Ea Uptake
+    .01, #kmslope uptake
+    .1, #km0 uptake
+    .000005, #Rate of enzyme production
+    .0005, #DOC input
+    .001, #Rate of enzyme loss
+    -.016, # CUE Slope
+    .63, #CUE 0
+    100000000, #Vmax uptake
+    100000000, #Vmax Decomp
+    .008314 #Gas constant
+)
+  
+```
+
+###Initial Conditions
+```{r}
+yini <- c(
+  SOC = 100,
+  DOC = .5,
+  ENZ = .01,
+  MIC = .5
+)
+```
+
+
+###Solve model
+
+```{r}
+library(deSolve)
+
+simulation_time <- 876000
+times <- seq(1, simulation_time, by = 24)
+output <- ode(y = yini, times = times, func = enzyme_catalysis_model, params = params, method = "lsoda")
+tail(output, 1)
