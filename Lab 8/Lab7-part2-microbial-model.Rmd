@@ -6,6 +6,70 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+enzyme_catalysis_model <- function(t, state, params){
+  #unpack states
+  SOC <- state[1]
+  DOC <- state[2]
+  ENZ <- state[3]
+  MIC <- state[4]
+  
+  #unpack parameters
+    # Parameters relevant to dSOC/dt:
+    SOCin <- params[1] # input of SOC
+    rDeath <- params[2] # rate of Death
+    MIC2SOC <- params[3] #Proportion death of MIC to SOC
+    Ea_decomp <- params[4] #Velocity of decomposition
+    Km_slope_decomp <- params[5] 
+    temp_decomp <- params[6]
+    Km0_decomp <- params[7]
+    
+    # Parameters relevant to dMIC/dt:
+    Ea_uptake <- params[8]
+    Km_slope_uptake <- params[9]
+    temp_uptake <- params[10]
+    Km0_uptake <- params[11]
+    #rDeath pre defined
+    r_EnzProd <- params[12]
+    
+    #Parameters relevant to dDOC/dt:
+    DOCin <- params[13]
+    #rDeath, MICtoSOC, Decomp predefined
+    r_EnzLoss <- params[14]
+    
+    
+    #CUE parameters:
+    CUE_slope <- params[15]
+    CUE0 <- params[16]
+    Vmax_uptake0 <- params[17]
+    Vmax_decomp0 <- params[18]
+    gasConst <- params[19]
+    
+    
+  #Calculate intermediate parameters:
+    Km_decomp <- Km_slope_decomp * temp + Km0_decomp
+    Km_uptake <- Km_slope_uptake * temp + Km0_uptake
+    CUE <- CUE_slope * temp + CUE0
+    Death <- rDeath * MIC
+    Assim <- Vmax_uptake * MIC * (DOC/(Km_uptake + DOC))
+    EProd <- r_EnzProd * MIC
+    Decomp <- Vmax_decomp * ENZ * (SOC/(Km + SOC))
+    ELoss <- r_EnzLoss * ENZ
+   
+     Vmax_decomp
+    Vmax_uptake <- Vmax_uptake0 * 
+    
+  #Diffeqs:
+  dMIC <- Assim * CUE - Death - EProd
+  
+  dSOC <- SOCin + (Death*MIC2SOC) - Decomp
+  
+  dDOC <- DOCin + Death(1-MIC2SOC) + Decomp + ELoss - Assim
+  
+  dENZ <- EProd - ELoss
+}
+
+
 ```
 
 # Goals: 
