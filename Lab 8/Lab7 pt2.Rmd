@@ -50,32 +50,36 @@ enzyme_catalysis_model <- function(t, state, params){
     
     
   #Calculate intermediate parameters:
+    Vmax_decomp <- Vmax_decomp0 * exp(-Ea_decomp/(gasConst*(temp +273)))
+    Vmax_uptake <- Vmax_uptake0 * exp(-Ea_uptake/(gasConst*(temp + 273)))
     Km_decomp <- Km_slope_decomp * temp + Km0_decomp
     Km_uptake <- Km_slope_uptake * temp + Km0_uptake
     CUE <- CUE_slope * temp + CUE0
     Death <- rDeath * MIC
     Assim <- Vmax_uptake * MIC * (DOC/(Km_uptake + DOC))
     EProd <- r_EnzProd * MIC
-    Decomp <- Vmax_decomp * ENZ * (SOC/(Km + SOC))
+    Decomp <- Vmax_decomp * ENZ * (SOC/(Km_decomp + SOC))
     ELoss <- r_EnzLoss * ENZ
+    
+    CO2 <- Assim * (1-CUE)
    
-     Vmax_decomp
-    Vmax_uptake <- Vmax_uptake0 * 
+   
     
   #Diffeqs:
   dMIC <- Assim * CUE - Death - EProd
   
   dSOC <- SOCin + (Death*MIC2SOC) - Decomp
   
-  dDOC <- DOCin + Death(1-MIC2SOC) + Decomp + ELoss - Assim
+  dDOC <- DOCin + (Death*(1-MIC2SOC)) + Decomp + ELoss - Assim
   
   dENZ <- EProd - ELoss
   
   
-  return(list(c(dMIC = dMIC, 
-                dSOC = dSOC,
+  return(list(c(dSOC = dSOC,
                 dDOC = dDOC,
-                dENZ = dENZ)))
+                dENZ = dENZ,
+                dMIC = dMIC),
+              c(CO2 = CO2)))
 }
 
 
@@ -84,7 +88,7 @@ enzyme_catalysis_model <- function(t, state, params){
 ###Parameters
 ```{r}
   params <- c(
-    .0005, #Initial SOC
+    .0005, #Input SOC
     .0002, #Rate of Death
     .5, #MIC2SOC
     47, #Ea-decomp
@@ -106,23 +110,112 @@ enzyme_catalysis_model <- function(t, state, params){
   
 ```
 
-###Initial Conditions
+###Spin up initial  Conditions
 ```{r}
-yini <- c(
-  SOC = 100,
-  DOC = .5,
-  ENZ = .01,
-  MIC = .5
+yini_spinup <- c(
+  SOC = 100, #100
+  DOC = .5, #.5
+  ENZ = .01, #.01
+  MIC = .5 #.5
 )
 ```
 
 
-###Solve model
+###Solve Initial model
 
 ```{r}
 library(deSolve)
 
 simulation_time <- 876000
 times <- seq(1, simulation_time, by = 24)
-output <- ode(y = yini, times = times, func = enzyme_catalysis_model, params = params, method = "lsoda")
-tail(output, 1)
+output <- ode(y = yini_spinup, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+yini_calculated <- tail(output, 1)
+yini <- c(SOC = yini_calculated[1], DOC = yini_calculated[2], ENZ = yini_calculated[3], MIC = yini_calculated[4])
+```
+
+
+##Experiments
+
+###Control
+```{r}
+simulation_time <- 262800
+times <- seq(1, simulation_time, by = 24)
+control <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+control <- as.data.frame(control)
+```
+
+###Warming + const. CUE
+```{r}
+params[6] = 25
+params[15] = .31
+params[14] = 0
+
+warming <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming <- as.data.frame(warming)
+```
+
+###Warming + vary CUE
+```{r}
+params[6] = 25
+params[15] = .63
+params[14] = -.016
+
+warming_VCUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming_VCUE <- as.data.frame(warming_VCUE)
+```
+
+###Warming + acclim CUE
+```{r}
+params[6] = 25
+params[15] = .27
+params[14] = 0
+
+warming_ACUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming_ACUE <- as.data.frame(warming_ACUE)
+```
+
+#Plots
+```{r, fig.width=10, fig.height=8}
+library(ggplot2)
+library("ggpubr")
+control$time <- control$time/8760
+CO2_p <- ggplot() + 
+geom_line(mapping= aes(x= (control$time),y=control$CO2.MIC, color = "Control")) +
+geom_line(mapping= aes(x= (control$time),y=warming$CO2.MIC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=(control$time),y=warming_ACUE$CO2.MIC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=(control$time),y=warming_VCUE$CO2.MIC, color = "Warming + Varying CUE")) +
+  labs(x = "Time (yrs)", y = "CO2")
+
+DOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$DOC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$DOC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$DOC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$DOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "DOC")
+
+SOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$SOC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$SOC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$SOC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$SOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "SOC")
+
+
+ENZ_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$ENZ, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$ENZ, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$ENZ, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$ENZ, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "ENZ")
+
+
+MIC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$MIC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$MIC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$MIC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$MIC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "MIC")
+
+
+ggarrange(CO2_p, DOC_p, SOC_p, ENZ_p, MIC_p, ncol = 1, common.legend = TRUE, legend = "right")
+```
