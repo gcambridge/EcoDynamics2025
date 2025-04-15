@@ -5,71 +5,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-enzyme_catalysis_model <- function(t, state, params){
-  #unpack states
-  SOC <- state[1]
-  DOC <- state[2]
-  ENZ <- state[3]
-  MIC <- state[4]
-  
-  #unpack parameters
-    # Parameters relevant to dSOC/dt:
-    SOCin <- params[1] # input of SOC
-    rDeath <- params[2] # rate of Death
-    MIC2SOC <- params[3] #Proportion death of MIC to SOC
-    Ea_decomp <- params[4] #Velocity of decomposition
-    Km_slope_decomp <- params[5] 
-    temp_decomp <- params[6]
-    Km0_decomp <- params[7]
-    
-    # Parameters relevant to dMIC/dt:
-    Ea_uptake <- params[8]
-    Km_slope_uptake <- params[9]
-    temp_uptake <- params[10]
-    Km0_uptake <- params[11]
-    #rDeath pre defined
-    r_EnzProd <- params[12]
-    
-    #Parameters relevant to dDOC/dt:
-    DOCin <- params[13]
-    #rDeath, MICtoSOC, Decomp predefined
-    r_EnzLoss <- params[14]
-    
-    
-    #CUE parameters:
-    CUE_slope <- params[15]
-    CUE0 <- params[16]
-    Vmax_uptake0 <- params[17]
-    Vmax_decomp0 <- params[18]
-    gasConst <- params[19]
-    
-    
-  #Calculate intermediate parameters:
-    Km_decomp <- Km_slope_decomp * temp + Km0_decomp
-    Km_uptake <- Km_slope_uptake * temp + Km0_uptake
-    CUE <- CUE_slope * temp + CUE0
-    Death <- rDeath * MIC
-    Assim <- Vmax_uptake * MIC * (DOC/(Km_uptake + DOC))
-    EProd <- r_EnzProd * MIC
-    Decomp <- Vmax_decomp * ENZ * (SOC/(Km + SOC))
-    ELoss <- r_EnzLoss * ENZ
-   
-     Vmax_decomp
-    Vmax_uptake <- Vmax_uptake0 * 
-    
-  #Diffeqs:
-  dMIC <- Assim * CUE - Death - EProd
-  
-  dSOC <- SOCin + (Death*MIC2SOC) - Decomp
-  
-  dDOC <- DOCin + Death(1-MIC2SOC) + Decomp + ELoss - Assim
-  
-  dENZ <- EProd - ELoss
-}
-
-
+knitr::opts_chunk $set(echo = TRUE)
 ```
 
 # Goals: 
@@ -85,6 +21,81 @@ enzyme_catalysis_model <- function(t, state, params){
 
 Construct the enzyme model described by Allison et al. (2010).  Use the modeling framework developed in class to build the differential equation model. 
 
+```{r}
+enzyme_catalysis_model <- function(t, state, params){
+  #unpack states
+  SOC <- state[1]
+  DOC <- state[2]
+  ENZ <- state[3]
+  MIC <- state[4]
+  
+  #unpack parameters
+    # Parameters relevant to dSOC/dt:
+    SOCin <- params[1] # input of SOC
+    rDeath <- params[2] # rate of Death
+    MIC2SOC <- params[3] #Proportion death of MIC to SOC
+    Ea_decomp <- params[4] #Velocity of decomposition
+    Km_slope_decomp <- params[5] 
+    temp <- params[6]
+    Km0_decomp <- params[7]
+    
+    # Parameters relevant to dMIC/dt:
+    Ea_uptake <- params[8]
+    Km_slope_uptake <- params[9]
+    Km0_uptake <- params[10]
+    #rDeath pre defined
+    r_EnzProd <- params[11]
+    
+    #Parameters relevant to dDOC/dt:
+    DOCin <- params[12]
+    #rDeath, MICtoSOC, Decomp predefined
+    r_EnzLoss <- params[13]
+    
+    
+    #CUE parameters:
+    CUE_slope <- params[14]
+    CUE0 <- params[15]
+    Vmax_uptake0 <- params[16]
+    Vmax_decomp0 <- params[17]
+    gasConst <- params[18]
+    
+    
+  #Calculate intermediate parameters:
+    Vmax_decomp <- Vmax_decomp0 * exp(-Ea_decomp/(gasConst*(temp +273)))
+    Vmax_uptake <- Vmax_uptake0 * exp(-Ea_uptake/(gasConst*(temp + 273)))
+    Km_decomp <- Km_slope_decomp * temp + Km0_decomp
+    Km_uptake <- Km_slope_uptake * temp + Km0_uptake
+    CUE <- CUE_slope * temp + CUE0
+    Death <- rDeath * MIC
+    Assim <- Vmax_uptake * MIC * (DOC/(Km_uptake + DOC))
+    EProd <- r_EnzProd * MIC
+    Decomp <- Vmax_decomp * ENZ * (SOC/(Km_decomp + SOC))
+    ELoss <- r_EnzLoss * ENZ
+    
+    CO2 <- Assim * (1-CUE)
+   
+   
+    
+  #Diffeqs:
+  dMIC <- Assim * CUE - Death - EProd
+  
+  dSOC <- SOCin + (Death*MIC2SOC) - Decomp
+  
+  dDOC <- DOCin + (Death*(1-MIC2SOC)) + Decomp + ELoss - Assim
+  
+  dENZ <- EProd - ELoss
+  
+  
+  return(list(c(dSOC = dSOC,
+                dDOC = dDOC,
+                dENZ = dENZ,
+                dMIC = dMIC),
+              c(CO2 = CO2)))
+}
+
+
+```
+
 # Step 2: Parameterize model
 
 Design the model experiments by setting up the different parameter sets required to run the experiments shown in column (a) of Figure 2
@@ -97,6 +108,96 @@ Design the model experiments by setting up the different parameter sets required
 Remember that you will need to do a spin-up simulation to determine the initial conditions (`yini`).  The same initial conditions will be used for each of the four model experiments above.  
 
 One of the challenges of the assignment is figuring out how the authors carried out their model experiments.
+
+###Parameters
+```{r}
+  params <- c(
+    .0005, #Input SOC
+    .0002, #Rate of Death
+    .5, #MIC2SOC
+    47, #Ea-decomp
+    5, #Km Slope decomp
+    20, #temp
+    500, #Km0
+    47, #Ea Uptake
+    .01, #kmslope uptake
+    .1, #km0 uptake
+    .000005, #Rate of enzyme production
+    .0005, #DOC input
+    .001, #Rate of enzyme loss
+    -.016, # CUE Slope
+    .63, #CUE 0
+    100000000, #Vmax uptake
+    100000000, #Vmax Decomp
+    .008314 #Gas constant
+)
+  
+```
+
+###Spin up initial  Conditions
+```{r}
+yini_spinup <- c(
+  SOC = 100, #100
+  DOC = .5, #.5
+  ENZ = .01, #.01
+  MIC = .5 #.5
+)
+```
+
+
+###Solve Initial model
+
+```{r}
+library(deSolve)
+
+simulation_time <- 876000
+times <- seq(1, simulation_time, by = 24)
+output <- ode(y = yini_spinup, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+yini_calculated <- tail(output, 1)
+yini <- c(SOC = yini_calculated[1], DOC = yini_calculated[2], ENZ = yini_calculated[3], MIC = yini_calculated[4])
+```
+
+
+##Experiments
+
+###Control
+```{r}
+simulation_time <- 262800
+times <- seq(1, simulation_time, by = 24)
+control <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+control <- as.data.frame(control)
+```
+
+###Warming + const. CUE
+```{r}
+params[6] = 25
+params[15] = .31
+params[14] = 0
+
+warming <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming <- as.data.frame(warming)
+```
+
+###Warming + vary CUE
+```{r}
+params[6] = 25
+params[15] = .63
+params[14] = -.016
+
+warming_VCUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming_VCUE <- as.data.frame(warming_VCUE)
+```
+
+###Warming + acclim CUE
+```{r}
+params[6] = 25
+params[15] = .27
+params[14] = 0
+
+warming_ACUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+warming_ACUE <- as.data.frame(warming_ACUE)
+```
+
 
 # Step 3: Run model
 
@@ -116,6 +217,52 @@ tail(out,1) #where 'out' is the output of the ODE solver
 - In the spin-up, use a simulation time of 100 years (in hours) and a dt of 24 hrs (one day)
 - In the experiments, use a simulation time of 30 years (in hours) and a dt of 24 hrs (one day)
 
+#Plots
+```{r, fig.width=10, fig.height=8}
+library(ggplot2)
+library("ggpubr")
+control$time <- control$time/8760
+CO2_p <- ggplot() + 
+geom_line(mapping= aes(x= (control$time),y=control$CO2.MIC, color = "Control")) +
+geom_line(mapping= aes(x= (control$time),y=warming$CO2.MIC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=(control$time),y=warming_ACUE$CO2.MIC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=(control$time),y=warming_VCUE$CO2.MIC, color = "Warming + Varying CUE")) +
+  labs(x = "Time (yrs)", y = "CO2")
+
+DOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$DOC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$DOC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$DOC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$DOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "DOC")
+
+SOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$SOC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$SOC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$SOC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$SOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "SOC")
+
+
+ENZ_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$ENZ, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$ENZ, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$ENZ, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$ENZ, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "ENZ")
+
+
+MIC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$MIC, color = "Control")) +
+geom_line(mapping= aes(x=control$time,y=warming$MIC, color = "Warming + Constant CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_ACUE$MIC, color = "Warming + Acclim. CUE")) +
+geom_line(mapping= aes(x=control$time,y=warming_VCUE$MIC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "MIC")
+
+
+ggarrange(CO2_p, DOC_p, SOC_p, ENZ_p, MIC_p, ncol = 1, common.legend = TRUE, legend = "right")
+```
+
 # Step 4: Communicate the results.  
 
 ## Methods section
@@ -132,19 +279,6 @@ Describe results with text and figures.
 
 Since you are using the Rmarkdown, your analysis code will be in the results section.  In your code, specify the parameters (`parms` vector) and the initial conditions (`yini` vector). Run the ODE solver for each of the four simulations.  Then save the output for each simulation as a unique name that you can use to build your graphs. 
 
-I expect the figure to be multi-panel (with different panels for the different variables and multiple lines for each experiment on each panel), with the five graphs in column (a) of Figure 2 in Allison et al. (2010).  
-
-Here is an example of a multi-panel figure in base R plotting.  You can also use ggplot if you are more comfortable with that plotting coding.
-
-```{r}
-attach(mtcars)  #Just an example of data in R
-par(mfrow=c(2,3)) #First number is the number of rows, and the second number is the number of columns in the plot
-#Plot like normal
-plot(wt,mpg, main="Scatterplot of wt vs. mpg")
-plot(wt,disp, main="Scatterplot of wt vs disp")
-hist(wt, main="Histogram of wt")
-boxplot(wt, main="Boxplot of wt")
-```
 
 ## Discussion section
 
