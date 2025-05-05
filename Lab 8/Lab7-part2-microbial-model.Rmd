@@ -8,18 +8,7 @@ output:
 knitr::opts_chunk $set(echo = TRUE)
 ```
 
-# Goals: 
-
--	Construct a model from peer-reviewed literature
--	Learn how to design a modeling study
--	Use R to solve differential equations
--	Create clean graphs to communicate model experiments
--	Explore an alternative decomposition model to the classic first-order decay model
-- Build independence in your modeling abilities
-
 # Step 1: Build model
-
-Construct the enzyme model described by Allison et al. (2010).  Use the modeling framework developed in class to build the differential equation model. 
 
 ```{r}
 enzyme_catalysis_model <- function(t, state, params){
@@ -62,6 +51,7 @@ enzyme_catalysis_model <- function(t, state, params){
     
   #Calculate intermediate parameters:
     Vmax_decomp <- Vmax_decomp0 * exp(-Ea_decomp/(gasConst*(temp +273)))
+    print(Vmax_decomp)
     Vmax_uptake <- Vmax_uptake0 * exp(-Ea_uptake/(gasConst*(temp + 273)))
     Km_decomp <- Km_slope_decomp * temp + Km0_decomp
     Km_uptake <- Km_slope_uptake * temp + Km0_uptake
@@ -98,18 +88,6 @@ enzyme_catalysis_model <- function(t, state, params){
 
 # Step 2: Parameterize model
 
-Design the model experiments by setting up the different parameter sets required to run the experiments shown in column (a) of Figure 2
-
-- control (no warming).  
-- warm + const CUE. 
-- warm + vary CUE. 
-- warm + acclim CUE. 
-
-Remember that you will need to do a spin-up simulation to determine the initial conditions (`yini`).  The same initial conditions will be used for each of the four model experiments above.  
-
-One of the challenges of the assignment is figuring out how the authors carried out their model experiments.
-
-###Parameters
 ```{r}
   params <- c(
     .0005, #Input SOC
@@ -198,26 +176,18 @@ warming_ACUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parm
 warming_ACUE <- as.data.frame(warming_ACUE)
 ```
 
+# Step 4: Communicate the results.  
 
-# Step 3: Run model
+## Methods section
 
-Run the simulations necessary to reproduce the results in column a of Figure 2 in Allison et al. (2010)  Use deSolve to solve your model.
+This model was based off the fluxes and stocks described in the following diagram: 
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 7\diagram.JPG)
 
-Tips for solving the model
+The following equations were derived from the diagram and from Allison et al. 2010:
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 7\eqs.JPG)
 
-- In the ode function, change `method = ode23` to `method = lsoda`
-- Use the the following code to get the state values at the last time step from the spin-up simulation,  Use these values as the `yini` for the experiments
 
-```{r eval=FALSE}
-tail(out,1) #where 'out' is the output of the ODE solver
-```
-
-- Include 'CO2' as one of the extra outputs in the differential equation function because it is not a model state, but you want to plot it.  Please take a look at the CHL example in the NPZD lab.
-- Include temperature as a parameter (though I like to think of it as a driver or forcing)
-- In the spin-up, use a simulation time of 100 years (in hours) and a dt of 24 hrs (one day)
-- In the experiments, use a simulation time of 30 years (in hours) and a dt of 24 hrs (one day)
-
-#Plots
+## Results
 ```{r, fig.width=10, fig.height=8}
 library(ggplot2)
 library("ggpubr")
@@ -263,35 +233,18 @@ geom_line(mapping= aes(x=control$time,y=warming_VCUE$MIC, color = "Warming + Var
 ggarrange(CO2_p, DOC_p, SOC_p, ENZ_p, MIC_p, ncol = 1, common.legend = TRUE, legend = "right")
 ```
 
-# Step 4: Communicate the results.  
-
-## Methods section
-
-Create a new Rmarkdown document with the following sections.
- 
-- Conceptual model diagram (you should have this from Lab 7)
-- Code is used to simulate the differential equation model as a function.  This is your differential equation function
-- Description of the model experiment.
-
-## Result section
-
-Describe results with text and figures.
-
-Since you are using the Rmarkdown, your analysis code will be in the results section.  In your code, specify the parameters (`parms` vector) and the initial conditions (`yini` vector). Run the ODE solver for each of the four simulations.  Then save the output for each simulation as a unique name that you can use to build your graphs. 
-
 
 ## Discussion section
 
-- What did you learn about how microbial dynamics may influence the response of decomposition and soil carbon storage to climate change?  
-- Why does the finding from the paper matter?  
-- Caveats and key areas of uncertainty in the model. 
-- What is the next question that you would like to potentially explore with the model  (or a modified version of the model) and why?   This answer can’t be the same as what is discussed in Allison et al. (2010).
+From my results, it seems that the increases in temperature under constant Carbon Use Efficiency increase the rate that Soil Organic Carbon is decomposed into the Aquatic Dissolved Organic Carbon pool. Interestingly, under this condition, the microbial biomass and enzymatic pools peak earlier as well, suggesting that the increases in temperature drive the microbial dynamics that rapidly convert SOC to CO2, due to the increased temperature but constant CUE, resulting in more "byproduct". This is reflected in the fact that under this scenario, the largest production of CO2 happens, suggesting that this would be the "worse" scenario for decomposition. There is a more direct pathway from soil organic carbon to an atmospheric pool that would only fuel a warming feedback response as atmospheric concentrations of this greenhouse gas increase. 
+
+The findings and results from this model suggest that microbial and enzyme pools have an important impact on the production of CO2 from soil decomposition, and that modeling their responses to temperature is critical to fine tuning models that largely just simplify the microbial components.
+
+I think further exploring the acclimatization of the microbial response and CUE would be interesting. Particularly diving into how the enzyme production changes with microbial activity at different temperatures.This was the largest area of uncertainty to me, because in my understanding it seemed the model addressed the temperature effects on the efficacy of the enzymes through the activation energy etc., but did not discuss the effects of temperature on enzyme production, beyond just parameterizing a constant enzyme production rate 
 
 ## References
 
-Include any references that you used.  You must include a reference to the Allison et al. (2010) paper.  Use the citation formatting of Ecology.  
-
-**Submit your knitted Rmarkdown that includes your code, figures, and text**
+Allison, S., Wallenstein, M. & Bradford, M. Soil-carbon response to warming dependent on microbial physiology. Nature Geosci 3, 336–340 (2010). https://doi.org/10.1038/ngeo846
 
 
 

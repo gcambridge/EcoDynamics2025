@@ -1,0 +1,162 @@
+---
+title: "NPZD Code that includes PAR as an input file"
+output:
+  github_document: default
+  html_document: default
+---
+
+## NPZD Model
+
+This is only necessary for the example.  If you have a csv with your input data then you don't need to do this step
+
+```{r}
+#Write the csv file with the PAR and temperature data
+light_function <- function(x){
+  time = x
+  0.5*(540+440*sin(2*pi*time/365-1.4))
+}
+
+temp_function <- function(x){
+  time = x
+  (15+15*sin(2*pi*time/365-1.4))
+}
+
+#Create the PAR data
+Day = seq(1,730,1)
+PAR = rep(NA,730)
+TEMP = rep(NA,730)
+for(i in 1:730){
+  PAR[i] = light_function(i)
+  TEMP[i] = temp_function(i)
+}
+
+#Combine the Day (so that you know which Day each PAR value corresponds to) with the PAR vector
+out = data.frame(Day = Day, PAR = PAR, TEMP = TEMP)
+plot(TEMP)
+
+#Read to a .csv file
+write.csv(out,"PAR_TEMP_inputs.csv",row.names = FALSE)
+```
+
+Differential equation with the inputs included:
+
+```{r}
+NPZD_model <- function(time, states, parms, inputs){
+  
+  PHYTO <- states[1]
+  ZOO <- states[2]
+  DETRITUS <- states[3]
+  DIN <- states[4]
+  
+  maxUptake <- parms[1]
+  kspar <- parms[2]
+  ksdin <- parms[3]
+  maxGrazing <- parms[4]
+  ksphyto <- parms[5]
+  pFaeces <- parms[6]
+  mortalityRate <- parms[7]
+  excretionRate <- parms[8]
+  mineralizationRate <- parms[9]
+  Chl_Nratio  <- parms[10]
+  Q10 <- parms[11]
+  
+  #OLD light forcing function
+  #PAR <- 0.5*(540+440*sin(2*pi*time/365-1.4)) #50% of light is PAR
+  
+  #NEW CODE
+  #USE THE PAR INPUT AND TIME-STEP INDEX TO GET THE CURRENT PAR VALUE
+  PAR <- inputs[time,2]  
+  TEMP <- inputs[time,3]   
+  
+  #FLUX EQUATIONS HERE
+  #f1 = N_Uptake 
+  #N_Uptake <- maxUptake*min((PAR/(PAR+kspar)),(DIN/(DIN+ksdin)))*PHYTO 
+  Temp_effect <- Q10^((TEMP - 20)/10)  
+  N_Uptake <- maxUptake * PHYTO * (PAR / (PAR + kspar)) * (DIN / (DIN + ksdin)) * Temp_effect
+  #f2 = Grazing
+  Grazing <- maxGrazing * ZOO * ((PHYTO / (PHYTO + ksphyto))) * Temp_effect
+  #f3 = FaecesProduction 
+  FaecesProduction <- Grazing * pFaeces
+  #f4 = Excretion
+  Excretion <- excretionRate * ZOO
+  #f5 = Mortality
+  Mortality <- mortalityRate * ZOO^2
+  #f6 = Mineralization
+  Mineralization <- mineralizationRate * DETRITUS * Temp_effect
+  
+  #Convert from plankton biomass to Chlorophyll to compare to data
+  Chlorophyll <- Chl_Nratio * PHYTO
+  
+  dPHYTO <- N_Uptake - Grazing
+  dZOO <- Grazing -FaecesProduction - Excretion -  Mortality
+  dDETRITUS <- FaecesProduction + Mortality - Mineralization
+  dDIN <- Excretion + Mineralization - N_Uptake
+  
+  return(list(c(dPHYTO,dZOO,dDETRITUS,dDIN), # the rate of change
+       c(Chlorophyll = Chlorophyll, PAR = PAR)))   # the ordinary output variables
+}
+
+```
+
+Parameters vector
+
+There is a new parameter for the temperature sensitivity (`Q10`)
+
+```{r}
+parms <- c(
+  1.0, #maxUptakeday-1
+  120, #kspar uEinst m-2 s-1
+  0.5, #ksdin mmol m-3
+  1.0, #maxGrazing day-1
+  1, #ksphyto mmol N m-3
+  0.3, #pFaeces unitless
+  0.4, # mortalityRate(mmmolN m-3)-1 day-1
+  0.1, #excretionRate day-1
+  0.1, #mineralizationRate day-1
+  1, #Chl_Nratio mg chl (mmolN)-1
+  2)  #Q10 unitless
+```
+
+Initial conditions
+
+```{r}
+yini <- c(
+  PHYTO = 1, #mmolN m-3
+  ZOO = 0.8, #mmolN m-3
+  DETRITUS = 1, #mmolN m-3
+  DIN = 9) #mmolN m-3
+```
+
+Read input data
+
+```{r}
+inputs <- read.csv("PAR_TEMP_inputs.csv")
+```
+
+Run model
+
+```{r}
+library(deSolve)
+
+#Use DeSolve to intergrate 
+simulation_time <- 2 * 365 #DAYS
+dt <- 1
+times <- seq(1, simulation_time, by = dt)
+
+#NEW: THAT PAR_input is added to the end of the arguments
+output <- as.data.frame(ode(y=yini, times = times, func = NPZD_model, parms = parms, method = "ode45", inputs = inputs))
+```
+
+Plot output
+
+```{r}
+#Plot the model output
+par(mfrow=c(2,3))
+plot(times,output$PAR,xlab='time (days)',ylab='umol/m2/s',main='PAR',type='l')
+plot(times,output$PHYTO,xlab='time (days)',ylab='mmolN/m3',main='Phytoplankton',type='l')
+plot(times,output$Chlorophyll,xlab='time (days)',ylab='ug/l',main='Chlorophyll',type='l')
+plot(times,output$ZOO,xlab='time (days)',ylab='mmolN/m3',main='Zooplankton',type='l')
+plot(times,output$DIN,xlab='time (days)',ylab='mmolN/m3',main='DIN',type='l')
+plot(times,output$DETRITUS,xlab='time (days)',ylab='mmolN/m3',main='DETRITUS',type='l')
+```
+

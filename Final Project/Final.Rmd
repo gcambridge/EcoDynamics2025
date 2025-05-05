@@ -1,0 +1,95 @@
+---
+  title: "Ecosystem Dynamics Final Project"
+output:
+  html_document: default
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk $set(echo = TRUE)
+```
+
+# Step 1: Build model
+```{r}
+conventional_model <- function(t, state, params){
+  #unpack states
+  SOC <- state[1]
+  DOC <- state[2]
+  MIC <- state[3]
+  
+  
+  kDOC0 <- params[1]
+  EaDOC <- params[2]
+  
+  kSOC0 <- params[3]
+  EaSOC <- params[4]
+  
+  kMIC0 <- params[5] 
+  EaMIC <- params[6]
+  
+  gasCons <- params[7]
+  temp <- params[8]
+  
+  SOCin <- params[9]
+  DOCin <- params[10]
+  DOCtoSOC <- params[11]
+  MICtoOC <- params[12]
+  MICtoSOC <- params[13]
+  
+  
+  kDOC <- kDOC0 * exp(-EaDOC/(gasCons*(temp+273)))
+  kSOC <- kSOC0 * exp(-EaSOC/(gasCons*(temp+273)))
+  kMIC <- kMIC0 * exp(-EaMIC/(gasCons*(temp+273)))
+  
+  SOCdecomp <- kSOC * SOC
+  DOCdecomp <- kDOC * DOCdecomp
+  Death <- kMIC * MIC
+  
+  dSOC <- SOCin + (DOCtoSOC * DOCdecomp) +     (MICtoOC*MICtoSOC*Death) - SOCdecomp
+  
+  dDOC <- DOCin + (SOCtoDOC * SOCdecomp) + (MICtoOC*(1-MICtoSOC)*Death) - (fuptake * DOC)
+  
+  dMIC <- (fuptake*DOC) - Death
+  
+  return(list(c(dSOC = dSOC,
+                dDOC = dDOC,
+                dENZ = dENZ,
+                dMIC = dMIC),
+              c(DOC = DOC)))
+  
+  
+}
+
+  
+params <- c(
+  10000,
+  40,
+  1300,
+  47,
+  1600,
+  40,
+  .008314,
+  20,
+  .0005,
+  .0005,
+  .2,
+  .2,
+  .2,
+  .5)
+
+yini_spinup <- c(
+  SOC = 100,
+  DOC = .5,
+  MIC = .5
+)
+
+library(deSolve)
+
+simulation_time <- 876000
+times <- seq(1, simulation_time, by = 24)
+output <- ode(y = yini_spinup, times = times, func = conventional_model, parms = params, method = "lsoda")
+yini_calculated <- tail(output, 1)
+yini <- c(SOC = yini_calculated[1], DOC = yini_calculated[2], MIC = yini_calculated[3])
+
+}```
+
+

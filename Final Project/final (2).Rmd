@@ -1,0 +1,206 @@
+---
+title: "Ecosystem Dynamics Lab 8"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk $set(echo = TRUE)
+```
+
+# Step 1: Build model
+
+```{r}
+conventional_model <- function(t, state, params){
+  #unpack states
+  SOC <- state[1]
+  DOC <- state[2]
+  MIC <- state[3]
+  
+  
+  kDOC0 <- params[1]
+  EaDOC <- params[2]
+  
+  kSOC0 <- params[3]
+  EaSOC <- params[4]
+  
+  kMIC0 <- params[5] 
+  EaMIC <- params[6]
+  
+  gasCons <- params[7]
+  temp <- params[8]
+  
+  SOCin <- params[9]
+  DOCin <- params[10]
+  DOCtoSOC <- params[11]
+  SOCtoDOC <- DOCtoSOC
+  MICtoOC <- params[12]
+  MICtoSOC <- params[13]
+  fuptake <- params[14]
+  
+  kDOC <- kDOC0 * exp(-EaDOC/(gasCons*(temp+273)))
+  kSOC <- kSOC0 * exp(-EaSOC/(gasCons*(temp+273)))
+  kMIC <- kMIC0 * exp(-EaMIC/(gasCons*(temp+273)))
+  
+  SOCdecomp <- kSOC * SOC
+  DOCdecomp <- kDOC * DOC
+  Death <- kMIC * MIC
+  
+  dSOC <- SOCin + (DOCtoSOC * DOCdecomp) +     (MICtoOC*MICtoSOC*Death) - SOCdecomp
+  
+  dDOC <- DOCin + (SOCtoDOC * SOCdecomp) + (MICtoOC*(1-MICtoSOC)*Death) - (fuptake * DOC)
+  
+  dMIC <- (fuptake*DOC) - Death
+  
+  return(list(c(dSOC = dSOC,
+                dDOC = dDOC,
+                dMIC = dMIC),
+              c(DOC = DOC)))
+  
+  
+}
+```
+
+# Step 2: Parameterize model
+
+```{r}
+ params <- c(
+  10000,       # kDOC0 (more realistic)
+  40,        # EaDOC
+  1300,     # kSOC0 = 1300 / 24
+  47,
+  1600,     # kMIC0 = 1600 / 24
+  40,
+  0.008314,
+  20,
+  0.0005,
+  0.0005,
+  0.2,
+  0.2,
+  0.2,
+  0.001,       # fuptake lowered
+  0.0005)
+  
+```
+
+###Spin up initial  Conditions
+```{r}
+yini_spinup <- c(
+  SOC = 100,
+  DOC = .5,
+  MIC = .05
+)
+```
+
+
+###Solve Initial model
+
+```{r}
+library(deSolve)
+
+simulation_time <- 876000
+times <- seq(1, simulation_time, by = 24)
+output <- ode(y = yini_spinup, times = times, func = conventional_model, parms = params, method = "lsoda")
+yini_calculated <- tail(output, 1)
+yini <- c(SOC = yini_calculated[1], DOC = yini_calculated[2], MIC = yini_calculated[3])
+```
+
+
+##Experiments
+
+###Control
+```{r}
+simulation_time <- 87600
+times <- seq(1, simulation_time, by = 24)
+control <- ode(y = yini, times = times, func = conventional_model, parms = params, method = "lsoda")
+control <- as.data.frame(control)
+```
+
+###Warming + const. CUE
+```{r}
+# params[6] = 25
+# params[15] = .31
+# params[14] = 0
+# 
+# warming <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+# warming <- as.data.frame(warming)
+```
+
+###Warming + vary CUE
+```{r}
+# params[6] = 25
+# params[15] = .63
+# params[14] = -.016
+# 
+# warming_VCUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+# warming_VCUE <- as.data.frame(warming_VCUE)
+```
+
+###Warming + acclim CUE
+```{r}
+# params[6] = 25
+# params[15] = .27
+# params[14] = 0
+# 
+# warming_ACUE <- ode(y = yini, times = times, func = enzyme_catalysis_model, parms = params, method = "lsoda")
+# warming_ACUE <- as.data.frame(warming_ACUE)
+```
+
+# Step 4: Communicate the results.  
+
+## Methods section
+
+This model was based off the fluxes and stocks described in the following diagram: 
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 7\diagram.JPG)
+
+The following equations were derived from the diagram and from Allison et al. 2010:
+![](C:\Users\gavrielcambridge\Documents\GitHub\EcoDynamics2025\Lab 7\eqs.JPG)
+
+
+## Results
+```{r, fig.width=10, fig.height=8}
+library(ggplot2)
+library("ggpubr")
+
+control$time <- control$time/8760
+
+DOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$DOC/10, color = "Control")) +
+# geom_line(mapping= aes(x=control$time,y=warming$DOC, color = "Warming + Constant CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_ACUE$DOC, color = "Warming + Acclim. CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_VCUE$DOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "DOC")
+
+SOC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$SOC/10, color = "Control")) +
+# geom_line(mapping= aes(x=control$time,y=warming$SOC, color = "Warming + Constant CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_ACUE$SOC, color = "Warming + Acclim. CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_VCUE$SOC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "SOC")
+
+MIC_p <- ggplot() + 
+geom_line(mapping= aes(x=control$time,y=control$MIC/10, color = "Control")) +
+# geom_line(mapping= aes(x=control$time,y=warming$MIC, color = "Warming + Constant CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_ACUE$MIC, color = "Warming + Acclim. CUE")) +
+# geom_line(mapping= aes(x=control$time,y=warming_VCUE$MIC, color = "Warming + Varying CUE")) +
+    labs(x = "Time (yrs)", y = "MIC")
+
+
+ggarrange(DOC_p, SOC_p, MIC_p, ncol = 1, common.legend = TRUE, legend = "right")
+```
+
+
+## Discussion section
+
+From my results, it seems that the increases in temperature under constant Carbon Use Efficiency increase the rate that Soil Organic Carbon is decomposed into the Aquatic Dissolved Organic Carbon pool. Interestingly, under this condition, the microbial biomass and enzymatic pools peak earlier as well, suggesting that the increases in temperature drive the microbial dynamics that rapidly convert SOC to CO2, due to the increased temperature but constant CUE, resulting in more "byproduct". This is reflected in the fact that under this scenario, the largest production of CO2 happens, suggesting that this would be the "worse" scenario for decomposition. There is a more direct pathway from soil organic carbon to an atmospheric pool that would only fuel a warming feedback response as atmospheric concentrations of this greenhouse gas increase. 
+
+The findings and results from this model suggest that microbial and enzyme pools have an important impact on the production of CO2 from soil decomposition, and that modeling their responses to temperature is critical to fine tuning models that largely just simplify the microbial components.
+
+I think further exploring the acclimatization of the microbial response and CUE would be interesting. Particularly diving into how the enzyme production changes with microbial activity at different temperatures.This was the largest area of uncertainty to me, because in my understanding it seemed the model addressed the temperature effects on the efficacy of the enzymes through the activation energy etc., but did not discuss the effects of temperature on enzyme production, beyond just parameterizing a constant enzyme production rate 
+
+## References
+
+Allison, S., Wallenstein, M. & Bradford, M. Soil-carbon response to warming dependent on microbial physiology. Nature Geosci 3, 336–340 (2010). https://doi.org/10.1038/ngeo846
+
+
+
